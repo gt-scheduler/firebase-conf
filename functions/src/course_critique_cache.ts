@@ -7,11 +7,11 @@ import { Response } from "express";
 import admin from "./firebase";
 import { apiError } from "./api";
 
-const inflate = util.promisify(zlib.inflate);
-const deflate = util.promisify(zlib.deflate);
+const compress = util.promisify(zlib.brotliCompress);
+const decompress = util.promisify(zlib.brotliDecompress);
 
 const UPSTREAM_COURSE_DATA_URL =
-  "https://c4citk6s9k.execute-api.us-east-1.amazonaws.com/test/data/course";
+  "https://c4citk6s9k.execute-api.us-east-1.amazonaws.com/prod/data/course";
 
 // Cache error responses for 1 hour
 const CACHE_ERROR_RESPONSE_EXPIRATION_SECONDS = 60 * 60 * 1;
@@ -31,7 +31,7 @@ type CacheItem = {
   // (old versions are ignored)
   v: 1;
   // Opaque Course Critique API response string,
-  // gzipped before being stored
+  // brotli-compressed before being stored
   d: string;
   // Opaque Course Critique API status code
   s: number;
@@ -148,7 +148,7 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
 );
 
 async function sendCachedResponse(item: CacheItem, response: Response) {
-  const uncompressedBody = await inflate(Buffer.from(item.d, "base64"));
+  const uncompressedBody = await decompress(Buffer.from(item.d, "base64"));
   response.status(item.s).header("Content-Type", item.c).send(uncompressedBody);
 }
 
@@ -157,7 +157,7 @@ async function storeCacheItem(
   rawBody: string,
   item: Omit<CacheItem, "d">
 ): Promise<void> {
-  const compressedBody = (await deflate(rawBody)).toString("base64");
+  const compressedBody = (await compress(rawBody)).toString("base64");
   const newDocument: CacheItem = {
     ...item,
     d: compressedBody.toString(),

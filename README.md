@@ -19,7 +19,7 @@ yarn serve
 You should then be able to access the [Firebase local emulator suite](https://firebase.google.com/docs/emulator-suite) running at http://localhost:4000/, and run functions at their URLs. For example, to run the `getCourseDataFromCourseCritique` function, you can run the following command:
 
 ```sh
-curl http://localhost:5001/gt-scheduler-web-prod/us-central1/getCourseDataFromCourseCritique?courseID=CS%201332
+curl "http://localhost:5001/gt-scheduler-web-prod/us-central1/getCourseDataFromCourseCritique?courseID=CS%201332"
 ```
 
 ## 📦 Deploying changes

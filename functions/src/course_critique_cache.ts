@@ -98,11 +98,7 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
           const expiredAt = date.addSeconds(now, expirationSeconds);
           const timestamp = new Date(data.t);
           if (timestamp < expiredAt) {
-            functions.logger.info("Using cached data for course", {
-              course_id: courseID,
-            });
-
-            await sendCachedResponse(data, response);
+            await sendCachedResponse(courseID, response, data);
             return;
           }
 
@@ -117,7 +113,10 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
       let upstreamResponse: fetch.Response;
       let upstreamResponseBody: string;
       try {
-        upstreamResponse = await fetch.default(url, { method: "GET" });
+        upstreamResponse = await fetch.default(url, {
+          method: "GET",
+          headers: { "User-Agent": "gt-scheduler-cache-proxy (node-fetch)" },
+        });
         upstreamResponseBody = await upstreamResponse.text();
       } catch (err) {
         // There was an error contacting the upstream API
@@ -130,11 +129,7 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
 
         // If there is cached data (even if stale), return it.
         if (maybeStaleCache !== null) {
-          functions.logger.info("Using cached data for course", {
-            course_id: courseID,
-          });
-
-          await sendCachedResponse(maybeStaleCache, response);
+          await sendCachedResponse(courseID, response, maybeStaleCache);
           return;
         }
 
@@ -164,15 +159,31 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
       response
         .status(upstreamResponse.status)
         .header("Content-Type", contentType)
+        .header("Age", "0")
         .send(upstreamResponseBody);
 
       await writePromise;
     })
 );
 
-async function sendCachedResponse(item: CacheItem, response: Response) {
+async function sendCachedResponse(
+  courseID: string,
+  response: Response,
+  item: CacheItem
+) {
   const uncompressedBody = await decompress(Buffer.from(item.d, "base64"));
-  response.status(item.s).header("Content-Type", item.c).send(uncompressedBody);
+  const now = new Date();
+  const age = Math.max(0, date.subtract(now, new Date(item.t)).toSeconds());
+  response
+    .status(item.s)
+    .header("Content-Type", item.c)
+    .header("Age", String(Math.floor(age)))
+    .send(uncompressedBody);
+
+  functions.logger.info("Using cached data for course", {
+    course_id: courseID,
+    age,
+  });
 }
 
 async function storeCacheItem(

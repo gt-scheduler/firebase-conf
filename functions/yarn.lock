@@ -129,7 +129,7 @@
     retry-request "^4.2.2"
     teeny-request "^7.0.0"
 
-"@google-cloud/firestore@^4.5.0":
+"@google-cloud/firestore@^4.15", "@google-cloud/firestore@^4.5.0":
   version "4.15.1"
   resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-4.15.1.tgz#ed764fc76823ce120e68fe8c27ef1edd0650cd93"
   integrity sha512-2PWsCkEF1W02QbghSeRsNdYKN1qavrHBP3m72gPDMHQSYrGULOaTi7fSJquQmAtc4iPVB2/x6h80rdLHTATQtA==
@@ -784,7 +784,7 @@ crypto-random-string@^2.0.0:
   resolved "https://registry.yarnpkg.com/crypto-random-string/-/crypto-random-string-2.0.0.tgz#ef2a7a966ec11083388369baa02ebead229b30d5"
   integrity sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==
 
-date-and-time@^2.0.0, date-and-time@^2.0.1:
+date-and-time@^2.0, date-and-time@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/date-and-time/-/date-and-time-2.0.1.tgz#bc8b72704980e8a0979bb186118d30d02059ef04"
   integrity sha512-O7Xe5dLaqvY/aF/MFWArsAM1J4j7w1CSZlPCX9uHgmb+6SbkPd8Q4YOvfvH/cZGvFlJFfHOZKxQtmMUOoZhc/w==
@@ -1236,7 +1236,7 @@ find-up@^2.1.0:
   dependencies:
     locate-path "^2.0.0"
 
-firebase-admin@^9.8.0:
+firebase-admin@^9.8:
   version "9.12.0"
   resolved "https://registry.yarnpkg.com/firebase-admin/-/firebase-admin-9.12.0.tgz#d7e889e97c9c31610efbcd131bb6d06a783af757"
   integrity sha512-AtA7OH5RbIFGoc0gZOQgaYC6cdjdhZv4w3XgWoupkPKO1HY+0GzixOuXDa75kFeoVyhIyo4PkLg/GAC1dC1P6w==
@@ -1260,7 +1260,7 @@ firebase-functions-test@^0.2.0:
     "@types/lodash" "^4.14.104"
     lodash "^4.17.5"
 
-firebase-functions@^3.14.1:
+firebase-functions@^3.14:
   version "3.16.0"
   resolved "https://registry.yarnpkg.com/firebase-functions/-/firebase-functions-3.16.0.tgz#603e47c2a563a5d0d1bc28f7362d0349c2f0d33f"
   integrity sha512-6ISOn0JckMtpA3aJ/+wCCGhThUhBUrpZD+tSkUeolx0Vr+NoYFXA0+2YzJZa/A2MDU8gotPzUtnauLSEQvfClQ==

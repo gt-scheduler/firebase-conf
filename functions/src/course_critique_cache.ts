@@ -87,6 +87,10 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
         const expiredAt = date.addSeconds(now, expirationSeconds);
         const timestamp = new Date(data.t);
         if (timestamp < expiredAt) {
+          functions.logger.info("Using cached data for course", {
+            course_id: courseID,
+          });
+
           await sendCachedResponse(data, response);
           return;
         }
@@ -115,6 +119,10 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
 
       // If there is cached data (even if stale), return it.
       if (maybeStaleCache !== null) {
+        functions.logger.info("Using cached data for course", {
+          course_id: courseID,
+        });
+
         await sendCachedResponse(maybeStaleCache, response);
         return;
       }
@@ -135,6 +143,10 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
       t: timestamp,
       s: upstreamResponse.status,
       c: contentType,
+    });
+
+    functions.logger.info("Loaded cache with fresh data for course", {
+      course_id: courseID,
     });
 
     // Eagerly send the response before waiting for the write to complete

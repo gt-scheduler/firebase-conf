@@ -14,7 +14,7 @@ const UPSTREAM_COURSE_DATA_URL =
 // Cache error responses for 1 hour
 const CACHE_ERROR_RESPONSE_EXPIRATION_SECONDS = 60 * 60 * 1;
 // Cache course data for 6 hours
-const CACHE_SUCCESS_RESPONSE_EXPIRATION_SECONDS = 60 * 60 * 6;
+const CACHE_SUCCESS_RESPONSE_EXPIRATION_SECONDS = 60 * 60 * 24;
 
 const courseDataCacheCollection = admin
   .firestore()

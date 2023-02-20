@@ -22,7 +22,7 @@ jobs:
         id: install
 
       - name: Run prettier
-        run: yarn run format:check
+        run: yarn run format
 
       - name: Run ESLint
         run: yarn run lint

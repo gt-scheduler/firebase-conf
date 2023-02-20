@@ -6,7 +6,9 @@ import { apiError } from "./api";
 import { FriendInviteData } from "../utils/types";
 
 const firestore = admin.firestore();
-const invitesCollection = firestore.collection("friend-invites-dev") as FirebaseFirestore.CollectionReference<FriendInviteData>;
+const invitesCollection = firestore.collection(
+  "friend-invites-dev"
+) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
 const corsHandler = cors({ origin: true });
 
@@ -16,7 +18,9 @@ export const handleFriendInvitation = functions.https.onRequest(
       try {
         const { inviteId } = request.body;
         if (!inviteId) {
-          return response.status(401).json(apiError("Invalid invite id provided"));
+          return response
+            .status(401)
+            .json(apiError("Invalid invite id provided"));
         }
 
         await invitesCollection.doc(inviteId).delete();

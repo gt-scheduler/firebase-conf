@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { sendEmail } from "./connectMailer";
 
 const semesterMapping = {
@@ -8,14 +6,22 @@ const semesterMapping = {
   "08": "Fall",
 };
 
-const baseUrl = process.env["FUNCTIONS_EMULATOR"] ? "http://localhost:3000/" : "https://gt-scheduler.org/";
-const termToString = (term: String): String => {
+const baseUrl = process.env["FUNCTIONS_EMULATOR"]
+  ? "http://localhost:3000/"
+  : "https://gt-scheduler.org/";
+const termToString = (term: string): string => {
   const semester = semesterMapping[term.slice(4)];
   const year = term.slice(0, 4);
   return `${semester} ${year}`;
-}
+};
 
-export default async function sendInvitation(inviteId: String, senderEmail, friendEmail: String, term: String, versionName: String): Promise<void> {
+export default async function sendInvitation(
+  inviteId: string,
+  senderEmail: string,
+  friendEmail: string,
+  term: string,
+  versionName: string
+): Promise<void> {
   const inviteUrl = baseUrl + `invite/${inviteId}`;
   const semester = termToString(term);
   const subject = "Friend Schedule Invite";
@@ -32,6 +38,6 @@ export default async function sendInvitation(inviteId: String, senderEmail, frie
       <p>&emsp;Version: ${versionName}</p>
       <p>Accept the invite: <a href="${inviteUrl}">${inviteUrl}</a></p>
     </div>
-  `
+  `;
   await sendEmail(friendEmail, subject, text, html);
 }

@@ -1,8 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import * as nodemailer from "nodemailer";
 
-export default async function connectMailer() {
+export default async function connectMailer(): nodemailer.Transporter {
   return nodemailer.createTransport({
     host: process.env.NODEMAILER_HOST ?? "",
     port: process.env.NODEMAILER_PORT ?? "",
@@ -17,7 +15,12 @@ export default async function connectMailer() {
   });
 }
 
-export async function sendEmail(email: String, subject: String, text: String, html: String) {
+export async function sendEmail(
+  email: string,
+  subject: string,
+  text: string,
+  html: string
+): void & Promise<string> {
   const transporter = await connectMailer();
   const info = await transporter.sendMail({
     from: process.env.NODEMAILER_EMAIL, // sender address

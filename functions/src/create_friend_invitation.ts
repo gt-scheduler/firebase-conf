@@ -8,7 +8,9 @@ import sendInvitation from "../utils/nodemailer/sendInvitation";
 
 const firestore = admin.firestore();
 const schedulesCollection = firestore.collection("schedules-dev");
-const invitesCollection = firestore.collection("friend-invites-dev") as FirebaseFirestore.CollectionReference<FriendInviteData>;
+const invitesCollection = firestore.collection(
+  "friend-invites-dev"
+) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 const auth = admin.auth();
 
 const corsHandler = cors({ origin: true });
@@ -17,12 +19,16 @@ export const createFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
-        const { IDToken, friendEmail, term, version } = JSON.parse(request.body);
+        const { IDToken, friendEmail, term, version } = JSON.parse(
+          request.body
+        );
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
         if (!friendEmail || !term || !version) {
-          return response.status(400).json(apiError("Invalid arguments provided"));
+          return response
+            .status(400)
+            .json(apiError("Invalid arguments provided"));
         }
 
         // Authenticate token id
@@ -36,7 +42,9 @@ export const createFriendInvitation = functions.https.onRequest(
         const senderEmail = decodedToken.email;
         // Check if the user is sending an invite to themself
         if (senderEmail === friendEmail) {
-          return response.status(400).json(apiError("Cannot invite self to schedule"));
+          return response
+            .status(400)
+            .json(apiError("Cannot invite self to schedule"));
         }
 
         // Get Sender UID and email from the decoded token
@@ -45,19 +53,28 @@ export const createFriendInvitation = functions.https.onRequest(
         const senderRes = await schedulesCollection.doc(senderId).get();
         const senderData = await senderRes.data();
 
-        if (!senderData || !senderData?.terms || !senderData.terms[term]?.versions || !senderData.terms[term].versions[version]) {
-          return response.status(400).json(apiError("Cannot invite friend to invalid schedule version"));
+        if (
+          !senderData ||
+          !senderData?.terms ||
+          !senderData.terms[term]?.versions ||
+          !senderData.terms[term].versions[version]
+        ) {
+          return response
+            .status(400)
+            .json(apiError("Cannot invite friend to invalid schedule version"));
         }
 
         const versionName = senderData.terms[term].versions[version].name;
 
         // Get friend UID if exists from friendEmail
-        let friendId
+        let friendId;
         try {
           const friendData = await auth.getUserByEmail(friendEmail);
           friendId = friendData.uid;
         } catch {
-          return response.status(400).json(apiError("Email does not exist in database"));
+          return response
+            .status(400)
+            .json(apiError("Email does not exist in database"));
         }
 
         // find and delete existing invites for the same sender, friend, term, and version
@@ -85,17 +102,27 @@ export const createFriendInvitation = functions.https.onRequest(
           const addRes = await invitesCollection.add(record);
           inviteId = addRes.id;
         } catch {
-          return response.status(400).json(apiError("Error saving new invite record"));
-        }
-        
-        // use nodemailer to send new invite
-        try {
-          await sendInvitation(inviteId, senderEmail, friendEmail, term, versionName);
-        } catch {
-          return response.status(400).json(apiError("Error sending invite email"));
+          return response
+            .status(400)
+            .json(apiError("Error saving new invite record"));
         }
 
-        return response.status(200).json({inviteId});
+        // use nodemailer to send new invite
+        try {
+          await sendInvitation(
+            inviteId,
+            senderEmail,
+            friendEmail,
+            term,
+            versionName
+          );
+        } catch {
+          return response
+            .status(400)
+            .json(apiError("Error sending invite email"));
+        }
+
+        return response.status(200).json({ inviteId });
       } catch (err) {
         console.error(err);
         return response.status(400).json(apiError("Error creating invite"));

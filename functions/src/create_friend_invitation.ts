@@ -42,12 +42,10 @@ export const createFriendInvitation = functions.https.onRequest(
         // Get Sender UID and email from the decoded token
         const senderId = decodedToken.uid;
         // const senderEmail = decodedToken.email;
-        const senderData = await schedulesCollection
-          .doc(senderId)
-          .get()
-          .then((doc) => {
-            return doc.data();
-          });
+        const senderRes = await schedulesCollection.doc(senderId).get();
+        console.log(senderRes);
+        const senderData = await senderRes.data();
+        console.log(senderData);
 
         if (!senderData || !senderData?.terms || !senderData.terms[term]?.versions || !senderData.terms[term].versions[version]) {
           return response.status(400).json(apiError("Cannot invite friend to invalid schedule version"));
@@ -93,7 +91,11 @@ export const createFriendInvitation = functions.https.onRequest(
         }
         
         // use nodemailer to send new invite
-        await sendInvitation(inviteId, senderEmail, friendEmail, term, versionName);
+        try {
+          await sendInvitation(inviteId, senderEmail, friendEmail, term, versionName);
+        } catch {
+          return response.status(400).json(apiError("Error sending invite email"));
+        }
 
         return response.status(200).json({inviteId});
       } catch (err) {

@@ -42,12 +42,8 @@ export const createFriendInvitation = functions.https.onRequest(
         // Get Sender UID and email from the decoded token
         const senderId = decodedToken.uid;
         // const senderEmail = decodedToken.email;
-        const senderData = await schedulesCollection
-          .doc(senderId)
-          .get()
-          .then((doc) => {
-            return doc.data();
-          });
+        const senderRes = await schedulesCollection.doc(senderId).get();
+        const senderData = await senderRes.data();
 
         if (!senderData || !senderData?.terms || !senderData.terms[term]?.versions || !senderData.terms[term].versions[version]) {
           return response.status(400).json(apiError("Cannot invite friend to invalid schedule version"));

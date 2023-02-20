@@ -32,5 +32,5 @@ export default async function sendInvitation(inviteId: String, senderEmail, frie
       <p>Accept the invite: <a href="${inviteUrl}">${inviteUrl}</a></p>
     </div>
   `
-  sendEmail(friendEmail, subject, text, html);
+  await sendEmail(friendEmail, subject, text, html);
 }

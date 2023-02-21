@@ -16,6 +16,12 @@ export const handleFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
+        // To handle fetch and axios
+        try {
+          request.body = JSON.parse(request.body);
+        } catch {
+          //
+        }
         const { inviteId } = request.body;
         if (!inviteId) {
           return response

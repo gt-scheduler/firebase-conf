@@ -19,9 +19,13 @@ export const createFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
-        const { IDToken, friendEmail, term, version } = JSON.parse(
-          request.body
-        );
+        // To handle fetch and axios
+        try {
+          request.body = JSON.parse(request.body);
+        } catch {
+          //
+        }
+        const { IDToken, friendEmail, term, version } = request.body;
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }

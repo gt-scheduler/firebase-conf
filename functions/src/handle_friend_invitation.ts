@@ -7,7 +7,7 @@ import { FriendInviteData } from "../utils/types";
 
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
-  "friend-invites-dev"
+  "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
 const corsHandler = cors({ origin: true });

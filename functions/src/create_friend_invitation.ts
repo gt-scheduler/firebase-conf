@@ -7,9 +7,9 @@ import { FriendInviteData } from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
 
 const firestore = admin.firestore();
-const schedulesCollection = firestore.collection("schedules-dev");
+const schedulesCollection = firestore.collection("schedules");
 const invitesCollection = firestore.collection(
-  "friend-invites-dev"
+  "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 const auth = admin.auth();
 

@@ -1,6 +1,6 @@
 import { sendEmail } from "./connectMailer";
 
-const semesterMapping = {
+const semesterMapping: Record<string, string> = {
   "02": "Spring",
   "05": "Summer",
   "08": "Fall",
@@ -10,7 +10,9 @@ const baseUrl = process.env["FUNCTIONS_EMULATOR"]
   ? "http://localhost:3000/"
   : "https://gt-scheduler.org/";
 const termToString = (term: string): string => {
+  if (term.length !== 6) return "Unknown";
   const semester = semesterMapping[term.slice(4)];
+  if (!semester) return "Unknown";
   const year = term.slice(0, 4);
   return `${semester} ${year}`;
 };

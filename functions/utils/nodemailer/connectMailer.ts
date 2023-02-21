@@ -1,6 +1,11 @@
 import * as nodemailer from "nodemailer";
 
-export default async function connectMailer(): nodemailer.Transporter {
+export interface SendMailInfo {
+  envelope: string;
+  messageId: string;
+}
+
+export default async function connectMailer(): Promise<nodemailer.Transporter> {
   return nodemailer.createTransport({
     host: process.env.NODEMAILER_HOST ?? "",
     port: process.env.NODEMAILER_PORT ?? "",
@@ -12,7 +17,7 @@ export default async function connectMailer(): nodemailer.Transporter {
     tls: {
       rejectUnauthorized: false,
     },
-  });
+  } as nodemailer.TransportOptions);
 }
 
 export async function sendEmail(
@@ -20,9 +25,9 @@ export async function sendEmail(
   subject: string,
   text: string,
   html: string
-): void & Promise<string> {
+): Promise<SendMailInfo> {
   const transporter = await connectMailer();
-  const info = await transporter.sendMail({
+  const info: SendMailInfo = await transporter.sendMail({
     from: process.env.NODEMAILER_EMAIL, // sender address
     to: email, // list of receivers
     subject, // Subject line

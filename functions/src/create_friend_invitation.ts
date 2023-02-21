@@ -40,6 +40,12 @@ export const createFriendInvitation = functions.https.onRequest(
         }
 
         const senderEmail = decodedToken.email;
+        if (!senderEmail) {
+          return response
+            .status(400)
+            .json(apiError("Cannot invite friend without an email"));
+        }
+
         // Check if the user is sending an invite to themself
         if (senderEmail === friendEmail) {
           return response
@@ -47,11 +53,12 @@ export const createFriendInvitation = functions.https.onRequest(
             .json(apiError("Cannot invite self to schedule"));
         }
 
-        // Get Sender UID and email from the decoded token
+        // Get Sender UID from the decoded token
         const senderId = decodedToken.uid;
-        // const senderEmail = decodedToken.email;
+
+        // Get Sender record from the schedules collection
         const senderRes = await schedulesCollection.doc(senderId).get();
-        const senderData = await senderRes.data();
+        const senderData = senderRes.data();
 
         if (
           !senderData ||

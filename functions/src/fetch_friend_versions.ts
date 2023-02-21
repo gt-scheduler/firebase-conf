@@ -16,7 +16,7 @@ export interface FriendsData {
 }
 
 export interface FriendsTermData {
-  accessible_schedules: Record<string, string[]>;
+  accessibleSchedules: Record<string, string[]>;
 }
 
 type VersionReturn = Record<string, Version3ScheduleVersion[]>;
@@ -66,7 +66,7 @@ export const fetchFriendVersions = functions.https.onRequest(
         .then(async (decodedToken: admin.auth.DecodedIdToken) => {
           const uid = decodedToken.uid;
           // Fetch user's friends
-          let userFriendData: FriendsData = (await friendsCollection
+          const userFriendData: FriendsData = (await friendsCollection
             .doc(uid)
             .get()
             .then((doc) => doc.data())) as FriendsData;
@@ -76,7 +76,7 @@ export const fetchFriendVersions = functions.https.onRequest(
             return;
           }
           const friendList =
-            userFriendData.terms[request.body.term].accessible_schedules;
+            userFriendData.terms[request.body.term].accessibleSchedules;
 
           // List of friends that the user actually has access to
           const accesibleFriends: string[] = friends.filter((friend: string) =>
@@ -93,11 +93,11 @@ export const fetchFriendVersions = functions.https.onRequest(
                   .doc(friend)
                   .get()
                   .then((doc) => doc.data()?.terms[request.body.term].versions);
-              const friend_email = await admin
+              const friendEmail = await admin
                 .auth()
                 .getUser(friend)
                 .then((user) => user.email);
-              if (friend_email == null) {
+              if (friendEmail == null) {
                 response.status(400).json(apiError("friend not found"));
                 return;
               }
@@ -107,12 +107,12 @@ export const fetchFriendVersions = functions.https.onRequest(
               const versions: Version3ScheduleVersion[] = versionsNeeded.map(
                 (version: string) => userVersions[version]
               );
-              friendVersionsReturn[friend_email] = versions;
+              friendVersionsReturn[friendEmail] = versions;
             })
           );
           response.status(200).json(friendVersionsReturn);
         })
-        .catch((error) => {
+        .catch(() => {
           response.status(400).json(apiError("invalid IDToken"));
           return;
         });

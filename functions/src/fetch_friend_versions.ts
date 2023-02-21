@@ -104,7 +104,7 @@ export const fetchFriendVersions = functions.https.onRequest(
               const versionsNeeded = Object.keys(userVersions).filter(
                 (version: string) => friends[friend].includes(version)
               );
-              const versions : Version3ScheduleVersion[] = versionsNeeded.map(
+              const versions: Version3ScheduleVersion[] = versionsNeeded.map(
                 (version: string) => userVersions[version]
               );
               friendVersionsReturn[friend_email] = versions;

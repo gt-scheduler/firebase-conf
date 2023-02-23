@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "gt-scheduler-web-prod"
+    "default": "gt-scheduler-web-prod",
+    "dev": "gt-scheduler-web-dev"
   }
 }

@@ -21,6 +21,9 @@ You should then be able to access the [Firebase local emulator suite](https://fi
 ```sh
 curl "http://localhost:5001/gt-scheduler-web-prod/us-central1/getCourseDataFromCourseCritique?courseID=CS%201332"
 ```
+## 🚧 Staging changes
+
+To test changes to firebase config and functions online, you should use the development Firebase app (`gt-scheduler-web-dev`). You'll need to log in to the GT Scheduler FIrebase account (using `firebase login`). Once this is done, run `firebase deploy --project dev` to stage your changes.
 
 ## 📦 Deploying changes
 

@@ -6,8 +6,8 @@
     "format": "prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
     "format:check": "prettier \"**/*.{js,jsx,ts,tsx,json}\" -l",
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start",
-    "shell": "npm run build && firebase functions:shell",
+    "serve": "npm run build && firebase emulators:start --project dev",
+    "shell": "npm run build && firebase functions:shell --project dev",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
@@ -15,7 +15,7 @@
   "engines": {
     "node": "14"
   },
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
   "dependencies": {
     "@google-cloud/firestore": "^4.15",
     "date-and-time": "^2.0",

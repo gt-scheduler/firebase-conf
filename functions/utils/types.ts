@@ -1,10 +1,19 @@
-// This file is a compilation of the data types of Firebase collections
+// This file is a compilation of Firebase collections' data schemas.
+
+export interface FriendInviteData {
+  friend: string;
+  sender: string;
+  term: string;
+  version: string;
+}
 
 // This type should automatically accept any schedule data
 export type AnyScheduleData = Version2ScheduleData | Version3ScheduleData;
 export type AnyScheduleVersion =
   | Version2ScheduleVersion
   | Version3ScheduleVersion;
+
+// The following types are directly imported from https://github.com/gt-scheduler/website/blob/main/src/data/types.ts
 
 // Version 2 schedule data (2021-10-26)
 // ===================================

@@ -27,4 +27,4 @@ To test changes to firebase config and functions online, you should use the deve
 
 ## 📦 Deploying changes
 
-To deploy changes (to either the firestore config or functions) to the production Firebase app (`gt-scheduler-web-prod`), you'll need to log in to the GT Scheduler Firebase account (using `firebase login`). Once this is done, simply run `firebase deploy` in the repository root to deploy all changes.
+To deploy changes (to either the firestore config or functions) to the production Firebase app (`gt-scheduler-web-prod`), you'll need to log in to the GT Scheduler Firebase account (using `firebase login`). Once this is done, simply run `firebase deploy --project prod` in the repository root to deploy all changes.

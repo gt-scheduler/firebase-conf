@@ -10,7 +10,10 @@
     "shell": "npm run build && firebase functions:shell --project dev",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "secrets:windows": "set /p BW_PASSWORD=Enter Bitwarden Password:&& (bw logout || VER>NUL) && npm run secrets:login",
+    "secrets:login": "FOR /F %a IN ('bw login product@bitsofgood.org %BW_PASSWORD% --raw') DO SET BW_SESSION=%a && npm run secrets:get",
+    "secrets:get": "bw sync && bw get item gt-scheduler/firebase-conf/.env | fx .notes > \".env\""
   },
   "engines": {
     "node": "14"

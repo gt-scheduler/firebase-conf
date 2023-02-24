@@ -12,7 +12,7 @@ export type AnyScheduleData = Version2ScheduleData | Version3ScheduleData;
 export type AnyScheduleVersion =
   | Version2ScheduleVersion
   | Version3ScheduleVersion;
-  
+
 // The following types are directly imported from https://github.com/gt-scheduler/website/blob/main/src/data/types.ts
 
 // Version 2 schedule data (2021-10-26)

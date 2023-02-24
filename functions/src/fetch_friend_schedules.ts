@@ -30,10 +30,16 @@ type SchedulePayload = Record<string, ScheduleVersionPayload>;
 export const fetchFriendSchedules = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
+      try {
+        request.body = JSON.parse(request.body);
+      } catch {
+        return response.status(400).json(apiError("Bad request"));
+      }
+
       const { IDToken, friends, term } = request.body;
 
       if (IDToken == null) {
-        response.status(400).json(apiError("IDToken not provided"));
+        response.status(401).json(apiError("IDToken not provided"));
         return;
       }
 

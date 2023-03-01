@@ -3,11 +3,14 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import { FriendInviteData } from "../utils/types";
+import { AnyScheduleData, FriendInviteData, Version3ScheduleData } from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
+// import { Timestamp } from "@google-cloud/firestore";
 
 const firestore = admin.firestore();
-const schedulesCollection = firestore.collection("schedules");
+const schedulesCollection = firestore.collection(
+  "schedules"
+) as FirebaseFirestore.CollectionReference<AnyScheduleData>;
 const invitesCollection = firestore.collection(
   "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
@@ -26,6 +29,7 @@ export const createFriendInvitation = functions.https.onRequest(
           return response.status(400).json(apiError("Bad request"));
         }
         const { IDToken, friendEmail, term, version } = request.body;
+
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
@@ -44,6 +48,7 @@ export const createFriendInvitation = functions.https.onRequest(
         }
 
         const senderEmail = decodedToken.email;
+        console.log(senderEmail);
         if (!senderEmail) {
           return response
             .status(400)
@@ -62,7 +67,7 @@ export const createFriendInvitation = functions.https.onRequest(
 
         // Get Sender record from the schedules collection
         const senderRes = await schedulesCollection.doc(senderId).get();
-        const senderData = senderRes.data();
+        const senderData: Version3ScheduleData | undefined = senderRes.data() as Version3ScheduleData | undefined;
 
         if (
           !senderData ||
@@ -107,10 +112,19 @@ export const createFriendInvitation = functions.https.onRequest(
           friend: friendId,
           term,
           version,
+          created: admin.firestore.Timestamp.fromDate(new Date()),
         };
         let inviteId;
         try {
           const addRes = await invitesCollection.add(record);
+          if (!senderData.terms[term].versions[version].friends) {
+            senderData.terms[term].versions[version].friends = {};
+          }
+          senderData.terms[term].versions[version].friends[friendId] = {
+            email: friendEmail,
+            status: "Pending",
+          };
+          schedulesCollection.doc(senderId).set(senderData);
           inviteId = addRes.id;
         } catch {
           return response

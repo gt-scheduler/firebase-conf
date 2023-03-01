@@ -14,18 +14,18 @@ This function is called every week to clean up the friend-invites collection. We
 export const cleanInvites = functions.pubsub
   .schedule("every 1 week")
   .onRun(async () => {
-    const docs = await invitesCollection.listDocuments();
+    const docs = await invitesCollection.get();
     docs.forEach(async (doc) => {
-      const data = await (await doc.get()).data();
+      const data = await doc.data();
       if (!data) {
-        doc.delete();
+        doc.ref.delete();
         return;
       }
       const diffInDays =
         (new Date().getTime() - data.created.toDate().getTime()) /
         (1000 * 3600 * 24);
       if (diffInDays >= 7) {
-        doc.delete();
+        doc.ref.delete();
       }
     });
   });

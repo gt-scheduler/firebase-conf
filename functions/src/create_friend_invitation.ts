@@ -3,7 +3,11 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import { AnyScheduleData, FriendInviteData, Version3ScheduleData } from "../utils/types";
+import {
+  AnyScheduleData,
+  FriendInviteData,
+  Version3ScheduleData,
+} from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
 // import { Timestamp } from "@google-cloud/firestore";
 
@@ -18,6 +22,7 @@ const auth = admin.auth();
 
 const corsHandler = cors({ origin: true });
 
+/* This endpoint is called when a user wabts to send an invitation*/
 export const createFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
@@ -48,7 +53,7 @@ export const createFriendInvitation = functions.https.onRequest(
         }
 
         const senderEmail = decodedToken.email;
-        console.log(senderEmail);
+
         if (!senderEmail) {
           return response
             .status(400)
@@ -65,9 +70,10 @@ export const createFriendInvitation = functions.https.onRequest(
         // Get Sender UID from the decoded token
         const senderId = decodedToken.uid;
 
-        // Get Sender record from the schedules collection
+        // Get Sender record from the schedules collection - it has to be version 3 because an invite was sent from it
         const senderRes = await schedulesCollection.doc(senderId).get();
-        const senderData: Version3ScheduleData | undefined = senderRes.data() as Version3ScheduleData | undefined;
+        const senderData: Version3ScheduleData | undefined =
+          senderRes.data() as Version3ScheduleData | undefined;
 
         if (
           !senderData ||
@@ -116,6 +122,7 @@ export const createFriendInvitation = functions.https.onRequest(
         };
         let inviteId;
         try {
+          // Add the invite data to the schedule of the sender
           const addRes = await invitesCollection.add(record);
           if (!senderData.terms[term].versions[version].friends) {
             senderData.terms[term].versions[version].friends = {};

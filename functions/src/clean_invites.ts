@@ -1,5 +1,9 @@
 import admin from "./firebase";
-import { AnyScheduleData, FriendInviteData, Version3ScheduleData } from "../utils/types";
+import {
+  AnyScheduleData,
+  FriendInviteData,
+  Version3ScheduleData,
+} from "../utils/types";
 import * as functions from "firebase-functions";
 
 const firestore = admin.firestore();
@@ -7,7 +11,9 @@ const invitesCollection = firestore.collection(
   "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
-const schedulesCollection = firestore.collection("schedules") as FirebaseFirestore.CollectionReference<AnyScheduleData>
+const schedulesCollection = firestore.collection(
+  "schedules"
+) as FirebaseFirestore.CollectionReference<AnyScheduleData>;
 
 /*
 This function is called every week to clean up the friend-invites collection. We only want to keep the invites made in the past week.
@@ -28,12 +34,16 @@ export const cleanInvites = functions.pubsub
         (1000 * 3600 * 24);
       if (diffInDays >= 7) {
         const senderDoc = await schedulesCollection.doc(data.sender).get();
-        const senderData = await senderDoc.data() as Version3ScheduleData | undefined;
+        const senderData = (await senderDoc.data()) as
+          | Version3ScheduleData
+          | undefined;
         if (!senderData) {
           doc.ref.delete();
           return;
         }
-        delete senderData.terms[data.term].versions[data.version].friends[data.friend];
+        delete senderData.terms[data.term].versions[data.version].friends[
+          data.friend
+        ];
         await senderDoc.ref.set(senderData);
         doc.ref.delete();
       }

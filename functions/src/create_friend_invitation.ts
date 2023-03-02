@@ -34,7 +34,7 @@ export const createFriendInvitation = functions.https.onRequest(
           // Do nothing
         }
         const { IDToken, friendEmail, term, version } = request.body;
-        
+
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }

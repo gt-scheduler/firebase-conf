@@ -31,10 +31,10 @@ export const createFriendInvitation = functions.https.onRequest(
         try {
           request.body = JSON.parse(request.body);
         } catch {
-          return response.status(400).json(apiError("Bad request"));
+          // Do nothing
         }
         const { IDToken, friendEmail, term, version } = request.body;
-
+        
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }

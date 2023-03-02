@@ -156,7 +156,6 @@ export const createFriendInvitation = functions.https.onRequest(
 
         return response.status(200).json({ inviteId });
       } catch (err) {
-        console.error(err);
         return response.status(400).json(apiError("Error creating invite"));
       }
     });

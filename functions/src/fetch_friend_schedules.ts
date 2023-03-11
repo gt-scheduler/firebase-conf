@@ -48,7 +48,7 @@ export const fetchFriendSchedules = functions.https.onRequest(
         friends == null ||
         Object.keys(friends).length === 0
       ) {
-        return response.status(400).json("Invalid request");
+        return response.status(400).json(apiError("Invalid request"));
       }
 
       let decodedToken: admin.auth.DecodedIdToken;

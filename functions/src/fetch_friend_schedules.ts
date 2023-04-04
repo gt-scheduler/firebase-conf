@@ -31,9 +31,16 @@ export const fetchFriendSchedules = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
+        // If request is sent using fetch
         request.body = JSON.parse(request.body);
       } catch {
-        return response.status(400).json(apiError("Bad request"));
+        try {
+          // If request is sent using axios and content type is application/x-www-form-urlencoded
+          request.body = JSON.parse(request.body.data);
+        } catch {
+          // If request is sent using axios and content type is application/json
+          // Do nothing
+        }
       }
 
       const { IDToken, friends, term } = request.body;
@@ -48,7 +55,7 @@ export const fetchFriendSchedules = functions.https.onRequest(
         friends == null ||
         Object.keys(friends).length === 0
       ) {
-        return response.status(400).json("Invalid request");
+        return response.status(400).json(apiError("Invalid request"));
       }
 
       let decodedToken: admin.auth.DecodedIdToken;

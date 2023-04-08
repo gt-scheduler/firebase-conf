@@ -23,7 +23,7 @@ export const createFriendInvitation = functions.https.onRequest(
         try {
           request.body = JSON.parse(request.body);
         } catch {
-          return response.status(400).json(apiError("Bad request"));
+          // return response.status(400).json(apiError("Bad request"));
         }
         const { IDToken, friendEmail, term, version } = request.body;
         if (!IDToken) {
@@ -35,6 +35,8 @@ export const createFriendInvitation = functions.https.onRequest(
             .json(apiError("Invalid arguments provided"));
         }
 
+        console.log("Error 1");
+
         // Authenticate token id
         let decodedToken: admin.auth.DecodedIdToken;
         try {
@@ -43,6 +45,8 @@ export const createFriendInvitation = functions.https.onRequest(
           return response.status(401).json(apiError("User not found"));
         }
 
+        console.log("Error 2");
+
         const senderEmail = decodedToken.email;
         if (!senderEmail) {
           return response
@@ -50,12 +54,16 @@ export const createFriendInvitation = functions.https.onRequest(
             .json(apiError("Cannot invite friend without an email"));
         }
 
+        console.log("Error 3");
+
         // Check if the user is sending an invite to themself
         if (senderEmail === friendEmail) {
           return response
             .status(400)
             .json(apiError("Cannot invite self to schedule"));
         }
+
+        console.log("Error 4");
 
         // Get Sender UID from the decoded token
         const senderId = decodedToken.uid;
@@ -75,6 +83,8 @@ export const createFriendInvitation = functions.https.onRequest(
             .json(apiError("Cannot invite friend to invalid schedule version"));
         }
 
+        console.log("Error 5");
+
         const versionName = senderData.terms[term].versions[version].name;
 
         // Get friend UID if exists from friendEmail
@@ -87,6 +97,8 @@ export const createFriendInvitation = functions.https.onRequest(
             .status(400)
             .json(apiError("Email does not exist in database"));
         }
+
+        console.log("Error 6");
 
         // find and delete existing invites for the same sender, friend, term, and version
         const existingInvites = await invitesCollection
@@ -117,6 +129,8 @@ export const createFriendInvitation = functions.https.onRequest(
             .status(400)
             .json(apiError("Error saving new invite record"));
         }
+
+        console.log("Error 7");
 
         // use nodemailer to send new invite
         try {

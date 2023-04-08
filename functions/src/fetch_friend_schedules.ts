@@ -31,9 +31,12 @@ export const fetchFriendSchedules = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
-        request.body = JSON.parse(request.body);
+        // This request should be made with content type is application/x-www-form-urlencoded.
+        // This is done to prevent a pre-flight CORS request made to the firebase function
+        // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
+        request.body = JSON.parse(request.body.data);
       } catch {
-        return response.status(400).json(apiError("Bad request"));
+        response.status(401).json(apiError("Bad request"));
       }
 
       const { IDToken, friends, term } = request.body;
@@ -48,7 +51,7 @@ export const fetchFriendSchedules = functions.https.onRequest(
         friends == null ||
         Object.keys(friends).length === 0
       ) {
-        return response.status(400).json("Invalid request");
+        return response.status(400).json(apiError("Invalid request"));
       }
 
       let decodedToken: admin.auth.DecodedIdToken;

@@ -20,7 +20,7 @@ export const handleFriendInvitation = functions.https.onRequest(
         try {
           request.body = JSON.parse(request.body);
         } catch {
-          return response.status(400).json(apiError("Bad request"));
+          // Do nothing
         }
         const { inviteId } = request.body;
         if (!inviteId) {

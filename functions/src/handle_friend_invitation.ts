@@ -100,7 +100,7 @@ export const handleFriendInvitation = functions.https.onRequest(
 
           // If the friend record doesn't exist, create it
           if (!friendRecord) {
-            friendRecord = { terms: {} };
+            friendRecord = { terms: {}, info: {} };
             friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
             friendRecord.terms[inviteData.term].accessibleSchedules[
               inviteData.sender

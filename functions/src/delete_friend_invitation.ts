@@ -3,10 +3,7 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import {
-  FriendData,
-  FriendInviteData,
-} from "../utils/types";
+import { FriendData, FriendInviteData } from "../utils/types";
 
 const firestore = admin.firestore();
 const auth = admin.auth();
@@ -72,8 +69,11 @@ export const deleteFriendInvitation = functions.https.onRequest(
           friendData.terms[term]?.accessibleSchedules &&
           friendData.terms[term].accessibleSchedules[senderId]
         ) {
-          const accessibleSchedules = friendData.terms[term].accessibleSchedules;
-          accessibleSchedules[senderId] = accessibleSchedules[senderId].filter((version_) => version_ !== version);
+          const accessibleSchedules =
+            friendData.terms[term].accessibleSchedules;
+          accessibleSchedules[senderId] = accessibleSchedules[senderId].filter(
+            (version_) => version_ !== version
+          );
           if (accessibleSchedules[senderId].length === 0) {
             delete accessibleSchedules[senderId];
           }

@@ -3,11 +3,18 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import { FriendInviteData } from "../utils/types";
+import {
+  AnyScheduleData,
+  FriendInviteData,
+  Version3ScheduleData,
+} from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
+// import { Timestamp } from "@google-cloud/firestore";
 
 const firestore = admin.firestore();
-const schedulesCollection = firestore.collection("schedules");
+const schedulesCollection = firestore.collection(
+  "schedules"
+) as FirebaseFirestore.CollectionReference<AnyScheduleData>;
 const invitesCollection = firestore.collection(
   "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
@@ -15,6 +22,7 @@ const auth = admin.auth();
 
 const corsHandler = cors({ origin: true });
 
+/* This endpoint is called when a user wabts to send an invitation*/
 export const createFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
@@ -26,6 +34,7 @@ export const createFriendInvitation = functions.https.onRequest(
           // Do nothing
         }
         const { IDToken, friendEmail, term, version } = request.body;
+
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
@@ -44,6 +53,7 @@ export const createFriendInvitation = functions.https.onRequest(
         }
 
         const senderEmail = decodedToken.email;
+
         if (!senderEmail) {
           return response
             .status(400)
@@ -60,9 +70,10 @@ export const createFriendInvitation = functions.https.onRequest(
         // Get Sender UID from the decoded token
         const senderId = decodedToken.uid;
 
-        // Get Sender record from the schedules collection
+        // Get Sender record from the schedules collection - it has to be version 3 because an invite was sent from it
         const senderRes = await schedulesCollection.doc(senderId).get();
-        const senderData = senderRes.data();
+        const senderData: Version3ScheduleData | undefined =
+          senderRes.data() as Version3ScheduleData | undefined;
 
         if (
           !senderData ||
@@ -107,10 +118,20 @@ export const createFriendInvitation = functions.https.onRequest(
           friend: friendId,
           term,
           version,
+          created: admin.firestore.Timestamp.fromDate(new Date()),
         };
         let inviteId;
         try {
+          // Add the invite data to the schedule of the sender
           const addRes = await invitesCollection.add(record);
+          if (!senderData.terms[term].versions[version].friends) {
+            senderData.terms[term].versions[version].friends = {};
+          }
+          senderData.terms[term].versions[version].friends[friendId] = {
+            email: friendEmail,
+            status: "Pending",
+          };
+          schedulesCollection.doc(senderId).set(senderData);
           inviteId = addRes.id;
         } catch {
           return response
@@ -135,7 +156,6 @@ export const createFriendInvitation = functions.https.onRequest(
 
         return response.status(200).json({ inviteId });
       } catch (err) {
-        console.error(err);
         return response.status(400).json(apiError("Error creating invite"));
       }
     });

@@ -57,7 +57,7 @@ export const handleFriendInvitation = functions.https.onRequest(
             );
         }
 
-        const inviteData = await inviteDoc.data();
+        const inviteData = inviteDoc.data();
 
         if (!inviteData) {
           return response
@@ -66,7 +66,7 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // Get the sender's schedule - it has to be version 3 (an invite was sent from this user)
-        const senderSchedule: Version3ScheduleData | undefined = (await (
+        const senderSchedule: Version3ScheduleData | undefined = ((
           await schedulesCollection.doc(inviteData.sender).get()
         ).data()) as Version3ScheduleData | undefined;
 
@@ -96,18 +96,25 @@ export const handleFriendInvitation = functions.https.onRequest(
             inviteData.version
           ].friends[inviteData.friend].status = "Accepted";
 
-          let friendRecord: FriendData | undefined = await (
+          let friendRecord: FriendData | undefined = (
             await friendsCollection.doc(inviteData.friend).get()
           ).data();
 
           // If the friend record doesn't exist, create it
           if (!friendRecord) {
             friendRecord = { terms: {}, info: {} };
-            friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
-            friendRecord.terms[inviteData.term].accessibleSchedules[
-              inviteData.sender
-            ] = [inviteData.version];
           }
+          if (!friendRecord.terms[inviteData.term]) {
+            friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
+          }
+          const friendArr = friendRecord.terms[inviteData.term].accessibleSchedules[
+            inviteData.sender
+          ] ?? [];
+          friendArr.push(inviteData.version);
+
+          friendRecord.terms[inviteData.term].accessibleSchedules[
+            inviteData.sender
+          ] = friendArr;
 
           // Update relevant docs
           await friendsCollection.doc(inviteData.friend).set(friendRecord);

@@ -85,8 +85,17 @@ export interface Version3Schedule {
 
 export interface FriendData {
   terms: Record<string, FriendTermData>;
+  info: FriendInfo;
 }
 
 export interface FriendTermData {
   accessibleSchedules: Record<string, string[]>;
 }
+
+export type FriendInfo = Record<
+  string,
+  {
+    name: string;
+    email: string;
+  }
+>;

@@ -67,9 +67,9 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // Get the sender's schedule - it has to be version 3 (an invite was sent from this user)
-        const senderSchedule: Version3ScheduleData | undefined = ((
+        const senderSchedule: Version3ScheduleData | undefined = (
           await schedulesCollection.doc(inviteData.sender).get()
-        ).data()) as Version3ScheduleData | undefined;
+        ).data() as Version3ScheduleData | undefined;
 
         if (!senderSchedule) {
           return response
@@ -108,17 +108,22 @@ export const handleFriendInvitation = functions.https.onRequest(
           if (!friendRecord.terms[inviteData.term]) {
             friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
           }
-          const friendArr = friendRecord.terms[inviteData.term].accessibleSchedules[
-            inviteData.sender
-          ] ?? [];
+          const friendArr =
+            friendRecord.terms[inviteData.term].accessibleSchedules[
+              inviteData.sender
+            ] ?? [];
           friendArr.push(inviteData.version);
 
           friendRecord.terms[inviteData.term].accessibleSchedules[
             inviteData.sender
           ] = friendArr;
           if (!(inviteData.sender in friendRecord.info)) {
-            const friendEmail = (await auth.getUser(inviteData.sender)).email ?? "";
-            friendRecord.info[inviteData.sender] = { email: friendEmail, name: friendEmail }
+            const friendEmail =
+              (await auth.getUser(inviteData.sender)).email ?? "";
+            friendRecord.info[inviteData.sender] = {
+              email: friendEmail,
+              name: friendEmail,
+            };
           }
 
           // Update relevant docs

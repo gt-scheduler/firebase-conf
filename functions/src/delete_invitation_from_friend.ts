@@ -42,7 +42,6 @@ export const deleteInvitationFromFriend = functions.https.onRequest(
           term: string;
           versions: string[];
         };
-        console.log("here", IDToken, senderId, term, versions);
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
@@ -63,13 +62,10 @@ export const deleteInvitationFromFriend = functions.https.onRequest(
 
         // Get user UID from the decoded token
         const friendId = decodedToken.uid;
-        console.log("here2", friendId);
 
         const senderRes = await schedulesCollection.doc(senderId).get();
         const senderData: Version3ScheduleData | undefined =
           senderRes.data() as Version3ScheduleData | undefined;
-        
-        console.log("here3", senderData);
 
         const flag = !!(
           senderData &&
@@ -77,41 +73,38 @@ export const deleteInvitationFromFriend = functions.https.onRequest(
           senderData.terms[term].versions
         );
 
-        console.log("here4", flag);
-
         // find and delete existing invites for the same sender, friend, term, and version
         // also deletes friend invites that show up on the sender's invitation modal
-        await Promise.allSettled(versions.map(async (version) => {
-          console.log("here5", version);
-          try {
-            const existingInvites = await invitesCollection
-              .where("sender", "==", senderId)
-              .where("friend", "==", friendId)
-              .where("term", "==", term)
-              .where("version", "==", version)
-              .get();
-            const batch = firestore.batch();
-            existingInvites.forEach((doc) => {
-              batch.delete(doc.ref);
-            });
-            await batch.commit();
+        await Promise.allSettled(
+          versions.map(async (version) => {
+            try {
+              const existingInvites = await invitesCollection
+                .where("sender", "==", senderId)
+                .where("friend", "==", friendId)
+                .where("term", "==", term)
+                .where("version", "==", version)
+                .get();
+              const batch = firestore.batch();
+              existingInvites.forEach((doc) => {
+                batch.delete(doc.ref);
+              });
+              await batch.commit();
 
-            console.log("here6");
-            if (flag && senderData.terms[term].versions[version]?.friends?.[friendId]) {
-              console.log("here7", senderData.terms[term].versions[version].friends)
-              const versionFriends = senderData.terms[term].versions[version].friends;
-              delete versionFriends[friendId];
-              console.log("here8", senderData.terms[term].versions[version].friends);
+              if (
+                flag &&
+                senderData.terms[term].versions[version]?.friends?.[friendId]
+              ) {
+                const versionFriends =
+                  senderData.terms[term].versions[version].friends;
+                delete versionFriends[friendId];
+              }
+            } catch {
+              // pass
             }
-            console.log("here9");
-          } catch {
-            // pass
-          }
-        }));
+          })
+        );
 
-        console.log("here10", senderData);
         if (senderData) {
-          console.log("here11")
           await schedulesCollection.doc(senderId).set(senderData);
         }
         return response.status(204).json({ message: "Deleted successfully" });

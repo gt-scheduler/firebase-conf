@@ -10,6 +10,7 @@ import {
   Version3ScheduleData,
 } from "../utils/types";
 
+const auth = admin.auth();
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
   "friend-invites"
@@ -115,6 +116,10 @@ export const handleFriendInvitation = functions.https.onRequest(
           friendRecord.terms[inviteData.term].accessibleSchedules[
             inviteData.sender
           ] = friendArr;
+          if (!(inviteData.sender in friendRecord.info)) {
+            const friendEmail = (await auth.getUser(inviteData.sender)).email ?? "";
+            friendRecord.info[inviteData.sender] = { email: friendEmail, name: friendEmail }
+          }
 
           // Update relevant docs
           await friendsCollection.doc(inviteData.friend).set(friendRecord);

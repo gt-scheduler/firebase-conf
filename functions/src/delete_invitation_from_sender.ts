@@ -18,7 +18,7 @@ const friendsCollection = firestore.collection(
 
 const corsHandler = cors({ origin: true });
 
-export const deleteFriendInvitation = functions.https.onRequest(
+export const deleteInvitationFromSender = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {

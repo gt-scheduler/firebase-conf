@@ -6,9 +6,6 @@ const semesterMapping: Record<string, string> = {
   "08": "Fall",
 };
 
-const baseUrl = process.env["FUNCTIONS_EMULATOR"]
-  ? "http://localhost:3000/"
-  : "https://gt-scheduler.org/";
 const termToString = (term: string): string => {
   if (term.length !== 6) return "Unknown";
   const semester = semesterMapping[term.slice(4)];
@@ -17,14 +14,24 @@ const termToString = (term: string): string => {
   return `${semester} ${year}`;
 };
 
-export default async function sendInvitation(
-  inviteId: string,
-  senderEmail: string,
-  friendEmail: string,
-  term: string,
-  versionName: string
-): Promise<void> {
-  const inviteUrl = baseUrl + `invite/${inviteId}`;
+interface SendInvitationParameters {
+  inviteId: string;
+  senderEmail: string;
+  friendEmail: string;
+  term: string;
+  versionName: string;
+  url?: string;
+}
+
+export default async function sendInvitation({
+  inviteId,
+  senderEmail,
+  friendEmail,
+  term,
+  versionName,
+  url,
+}: SendInvitationParameters): Promise<void> {
+  const inviteUrl = url + `/#/invite/${inviteId}`;
   const semester = termToString(term);
   const subject = "Friend Schedule Invite";
   const text = `

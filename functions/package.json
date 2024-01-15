@@ -6,7 +6,7 @@
     "format": "prettier \"**/*.{js,jsx,ts,tsx,json}\" --write",
     "format:check": "prettier \"**/*.{js,jsx,ts,tsx,json}\" -l",
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --project dev",
+    "serve": "npm run build && firebase emulators:start --project dev --only functions",
     "shell": "npm run build && firebase functions:shell --project dev",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",

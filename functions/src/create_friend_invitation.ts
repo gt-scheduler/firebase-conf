@@ -9,7 +9,6 @@ import {
   Version3ScheduleData,
 } from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
-// import { Timestamp } from "@google-cloud/firestore";
 
 const firestore = admin.firestore();
 const schedulesCollection = firestore.collection(
@@ -22,7 +21,7 @@ const auth = admin.auth();
 
 const corsHandler = cors({ origin: true });
 
-/* This endpoint is called when a user wabts to send an invitation*/
+/* This endpoint is called when a user wants to send an invitation*/
 export const createFriendInvitation = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
@@ -35,7 +34,7 @@ export const createFriendInvitation = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { IDToken, friendEmail, term, version } = request.body;
+        const { IDToken, friendEmail, term, version, redirectURL } = request.body;
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
@@ -143,13 +142,14 @@ export const createFriendInvitation = functions.https.onRequest(
 
         // use nodemailer to send new invite
         try {
-          await sendInvitation(
+          await sendInvitation({
             inviteId,
             senderEmail,
             friendEmail,
             term,
-            versionName
-          );
+            versionName,
+            url: redirectURL.replace(/\/+$/, ""),
+          });
         } catch {
           return response
             .status(400)
@@ -158,6 +158,7 @@ export const createFriendInvitation = functions.https.onRequest(
 
         return response.status(200).json({ inviteId });
       } catch (err) {
+        console.error(err);
         return response.status(400).json(apiError("Error creating invite"));
       }
     });

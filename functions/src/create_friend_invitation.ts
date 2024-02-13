@@ -5,7 +5,8 @@ import { apiError } from "./api";
 
 import {
   AnyScheduleData,
-  FriendInviteData,
+  CreateInviteRequestData,
+  FriendEmailInviteData,
   Version3ScheduleData,
 } from "../utils/types";
 import sendInvitation from "../utils/nodemailer/sendInvitation";
@@ -16,7 +17,7 @@ const schedulesCollection = firestore.collection(
 ) as FirebaseFirestore.CollectionReference<AnyScheduleData>;
 const invitesCollection = firestore.collection(
   "friend-invites"
-) as FirebaseFirestore.CollectionReference<FriendInviteData>;
+) as FirebaseFirestore.CollectionReference<FriendEmailInviteData>;
 const auth = admin.auth();
 
 const corsHandler = cors({ origin: true });
@@ -34,13 +35,13 @@ export const createFriendInvitation = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { IDToken, friendEmail, term, version, redirectURL } =
-          request.body;
+        const { IDToken, friendEmail, term, versions, redirectURL } =
+          request.body as CreateInviteRequestData;
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
-        if (!friendEmail || !term || !version) {
+        if (!friendEmail || !term || !versions || !redirectURL) {
           return response
             .status(400)
             .json(apiError("Invalid arguments provided"));
@@ -81,17 +82,19 @@ export const createFriendInvitation = functions.https.onRequest(
           !senderData ||
           !senderData?.terms ||
           !senderData.terms[term]?.versions ||
-          !senderData.terms[term].versions[version]
+          versions.filter((v) => !senderData.terms[term].versions[v]).length > 0
         ) {
           return response
             .status(400)
             .json(apiError("Cannot invite friend to invalid schedule version"));
         }
 
-        const versionName = senderData.terms[term].versions[version].name;
+        const versionNames = versions.map(
+          (v) => senderData.terms[term].versions[v].name
+        );
 
         // Get friend UID if exists from friendEmail
-        let friendId;
+        let friendId: string;
         try {
           const friendData = await auth.getUserByEmail(friendEmail);
           friendId = friendData.uid;
@@ -106,7 +109,7 @@ export const createFriendInvitation = functions.https.onRequest(
           .where("sender", "==", senderId)
           .where("friend", "==", friendId)
           .where("term", "==", term)
-          .where("version", "==", version)
+          .where("version", "in", versions)
           .get();
         const batch = firestore.batch();
         existingInvites.forEach((doc) => {
@@ -115,24 +118,28 @@ export const createFriendInvitation = functions.https.onRequest(
         await batch.commit();
 
         // create new invite record in db
-        const record: FriendInviteData = {
+        const record: FriendEmailInviteData = {
           sender: senderId,
-          friend: friendId,
           term,
-          version,
+          versions,
           created: admin.firestore.Timestamp.fromDate(new Date()),
+          link: false,
+          validFor: 7,
+          friend: friendId,
         };
         let inviteId;
         try {
           // Add the invite data to the schedule of the sender
           const addRes = await invitesCollection.add(record);
-          if (!senderData.terms[term].versions[version].friends) {
-            senderData.terms[term].versions[version].friends = {};
-          }
-          senderData.terms[term].versions[version].friends[friendId] = {
-            email: friendEmail,
-            status: "Pending",
-          };
+          versions.forEach((v) => {
+            if (!senderData.terms[term].versions[v].friends) {
+              senderData.terms[term].versions[v].friends = {};
+            }
+            senderData.terms[term].versions[v].friends[friendId] = {
+              email: friendEmail,
+              status: "Pending",
+            };
+          });
           schedulesCollection.doc(senderId).set(senderData);
           inviteId = addRes.id;
         } catch {
@@ -148,7 +155,7 @@ export const createFriendInvitation = functions.https.onRequest(
             senderEmail,
             friendEmail,
             term,
-            versionName,
+            versionNames,
             url: redirectURL.replace(/\/+$/, ""),
           });
         } catch {

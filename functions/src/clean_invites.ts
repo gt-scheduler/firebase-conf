@@ -1,7 +1,7 @@
 import admin from "./firebase";
 import {
   AnyScheduleData,
-  FriendInviteData,
+  OldFriendInviteData,
   Version3ScheduleData,
 } from "../utils/types";
 import * as functions from "firebase-functions";
@@ -9,7 +9,7 @@ import * as functions from "firebase-functions";
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
   "friend-invites"
-) as FirebaseFirestore.CollectionReference<FriendInviteData>;
+) as FirebaseFirestore.CollectionReference<OldFriendInviteData>;
 
 const schedulesCollection = firestore.collection(
   "schedules"

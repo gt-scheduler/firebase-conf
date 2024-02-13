@@ -34,7 +34,7 @@ export const createFriendInvitation = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { IDToken, term, versions, validFor } =
+        const { IDToken, term, versions, redirectURL, validFor } =
           request.body as CreateInviteRequestData;
 
         if (!IDToken) {
@@ -59,7 +59,7 @@ export const createFriendInvitation = functions.https.onRequest(
         if (!senderEmail) {
           return response
             .status(400)
-            .json(apiError("Cannot invite friend without an email"));
+            .json(apiError("Cannot share schedule link without an email"));
         }
 
         // Get Sender UID from the decoded token
@@ -78,10 +78,10 @@ export const createFriendInvitation = functions.https.onRequest(
         ) {
           return response
             .status(400)
-            .json(apiError("Cannot invite friend to invalid schedule version"));
+            .json(apiError("Cannot make link for invalid schedule version"));
         }
 
-        // find and delete existing invites for the same sender, friend, term, and version
+        // find and delete existing links for the same sender, term, and version
         const existingInvites = await invitesCollection
           .where("sender", "==", senderId)
           .where("term", "==", term)
@@ -114,7 +114,9 @@ export const createFriendInvitation = functions.https.onRequest(
             .status(400)
             .json(apiError("Error saving new invite record"));
         }
-        return response.status(200).json({ inviteId });
+        return response
+          .status(200)
+          .json({ link: redirectURL + `/#/invite/${inviteId}` });
       } catch (err) {
         console.error(err);
         return response.status(400).json(apiError("Error creating invite"));

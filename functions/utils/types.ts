@@ -20,8 +20,8 @@ export type CreateInviteRequestData = {
   IDToken: string;
   term: string;
   versions: string[];
+  redirectURL: string;
   friendEmail?: string;
-  redirectURL?: string;
   validFor?: number;
 };
 

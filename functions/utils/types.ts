@@ -22,6 +22,7 @@ export type CreateInviteRequestData = {
   versions: string[];
   friendEmail?: string;
   redirectURL?: string;
+  validFor?: number;
 };
 
 export interface OldFriendInviteData {

@@ -124,16 +124,21 @@ export const handleFriendInvitation = functions.https.onRequest(
             .status(400)
             .json(apiError("Cannot invite self to schedule"));
         }
+        const friendEmail = (await auth.getUser(friendId)).email;
+        if (!friendEmail) {
+          return response
+            .status(400)
+            .json(apiError("Invalid friend email from DB"));
+        }
         inviteData.versions.forEach(async (idx) => {
           senderSchedule.terms[inviteData.term].versions[idx].friends[
             friendId
           ] = {
-            // Single-invite links already have a friend entry with an email - will not overwrite
-            // in case there are un-obvious email-related nuances
-            email:
-              senderSchedule.terms[inviteData.term].versions[idx].friends[
-                friendId
-              ].email ?? (await auth.getUser(friendId)).email,
+            // email:
+            //   senderSchedule.terms[inviteData.term].versions[idx].friends[
+            //     friendId
+            //   ].email ?? friendEmail,
+            email: friendEmail,
             status: "Accepted",
           };
         });

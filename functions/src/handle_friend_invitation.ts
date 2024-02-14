@@ -39,7 +39,7 @@ export const handleFriendInvitation = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { inviteId } = request.body;
+        const { inviteId, token } = request.body;
 
         if (!inviteId) {
           return response
@@ -58,7 +58,7 @@ export const handleFriendInvitation = functions.https.onRequest(
             );
         }
 
-        const inviteData = inviteDoc.data();
+        const inviteData: FriendInviteData | undefined = inviteDoc.data();
 
         if (!inviteData) {
           return response
@@ -82,56 +82,96 @@ export const handleFriendInvitation = functions.https.onRequest(
           (new Date().getTime() - inviteData.created.toDate().getTime()) /
           (1000 * 3600 * 24);
 
-        if (diffInDays >= 7) {
-          // Delete the invite record and the invite from users shcedule if link is expired
-          delete senderSchedule.terms[inviteData.term].versions[
-            inviteData.version
-          ].friends[inviteData.friend];
+        const defaultValidDuration = 7;
+        const validDuration = inviteData?.validFor
+          ? inviteData.validFor / (3600 * 24)
+          : defaultValidDuration;
+        if (diffInDays >= validDuration) {
+          // Check if invite link is for a specific friend
+          if (!inviteData.link && inviteData.friend) {
+            // Delete the invite record and the invite from users shcedule if single-invite link is expired
+            inviteData.versions.forEach(
+              (idx) =>
+                delete senderSchedule.terms[inviteData.term].versions[idx]
+                  .friends[inviteData.friend!]
+            );
+          }
           await inviteDoc.ref.delete();
           return response
             .status(400)
             .json(apiError("The invitation link has expired"));
-        } else {
-          // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
-          senderSchedule.terms[inviteData.term].versions[
-            inviteData.version
-          ].friends[inviteData.friend].status = "Accepted";
+        }
 
-          let friendRecord: FriendData | undefined = (
-            await friendsCollection.doc(inviteData.friend).get()
-          ).data();
+        // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
 
-          // If the friend record doesn't exist, create it
-          if (!friendRecord) {
-            friendRecord = { terms: {}, info: {} };
+        let friendToken: admin.auth.DecodedIdToken | undefined = undefined;
+        if (inviteData.link && token) {
+          try {
+            friendToken = await auth.verifyIdToken(token);
+          } catch {
+            return response.status(401).json(apiError("User not found"));
           }
-          if (!friendRecord.terms[inviteData.term]) {
-            friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
-          }
-          const friendArr =
-            friendRecord.terms[inviteData.term].accessibleSchedules[
-              inviteData.sender
-            ] ?? [];
-          friendArr.push(inviteData.version);
+        }
 
+        const friendId = inviteData.link
+          ? friendToken?.uid
+          : inviteData?.friend;
+        if (!friendId) {
+          return response.status(400).json(apiError("Invalid friend ID"));
+        }
+        if (inviteData.sender === friendId) {
+          return response
+            .status(400)
+            .json(apiError("Cannot invite self to schedule"));
+        }
+        inviteData.versions.forEach(async (idx) => {
+          senderSchedule.terms[inviteData.term].versions[idx].friends[
+            friendId
+          ] = {
+            // Single-invite links already have a friend entry with an email - will not overwrite
+            // in case there are un-obvious email-related nuances
+            email:
+              senderSchedule.terms[inviteData.term].versions[idx].friends[
+                friendId
+              ].email ?? (await auth.getUser(friendId)).email,
+            status: "Accepted",
+          };
+        });
+
+        let friendRecord: FriendData | undefined = (
+          await friendsCollection.doc(friendId).get()
+        ).data();
+
+        // If the friend record doesn't exist, create it
+        if (!friendRecord) {
+          friendRecord = { terms: {}, info: {} };
+        }
+        if (!friendRecord.terms[inviteData.term]) {
+          friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
+        }
+        const friendArr =
           friendRecord.terms[inviteData.term].accessibleSchedules[
             inviteData.sender
-          ] = friendArr;
-          if (!(inviteData.sender in friendRecord.info)) {
-            const friendEmail =
-              (await auth.getUser(inviteData.sender)).email ?? "";
-            friendRecord.info[inviteData.sender] = {
-              email: friendEmail,
-              name: friendEmail,
-            };
-          }
+          ] ?? [];
+        friendArr.push(...inviteData.versions);
 
-          // Update relevant docs
-          await friendsCollection.doc(inviteData.friend).set(friendRecord);
-          await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
-          await inviteDoc.ref.delete();
-          return response.status(202).send();
+        friendRecord.terms[inviteData.term].accessibleSchedules[
+          inviteData.sender
+        ] = friendArr;
+        if (!(inviteData.sender in friendRecord.info)) {
+          const senderEmail =
+            (await auth.getUser(inviteData.sender)).email ?? "";
+          friendRecord.info[inviteData.sender] = {
+            email: senderEmail,
+            name: senderEmail,
+          };
         }
+
+        // Update relevant docs
+        await friendsCollection.doc(friendId).set(friendRecord);
+        await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
+        await inviteDoc.ref.delete();
+        return response.status(202).send();
       } catch (err) {
         return response.status(400).json(apiError("Error accepting invite"));
       }

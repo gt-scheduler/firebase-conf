@@ -3,11 +3,13 @@
 import { Timestamp } from "@google-cloud/firestore";
 
 export interface FriendInviteData {
-  friend: string;
   sender: string;
   term: string;
-  version: string;
+  versions: string[];
   created: Timestamp;
+  link: boolean; // is this invite a link ?
+  validFor?: number; // assume units of days
+  friend?: string;
 }
 
 // This type should automatically accept any schedule data

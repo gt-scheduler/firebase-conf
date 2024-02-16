@@ -32,7 +32,7 @@ export const createFriendInvitation = functions.https.onRequest(
           // This request should be made with content type is application/x-www-form-urlencoded.
           // This is done to prevent a pre-flight CORS request made to the firebase function
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
-          request.body = JSON.parse(request.body.data);
+          request.body = JSON.parse(request.body);
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
@@ -110,7 +110,7 @@ export const createFriendInvitation = functions.https.onRequest(
           .where("sender", "==", senderId)
           .where("friend", "==", friendId)
           .where("term", "==", term)
-          .where("version", "in", versions)
+          .where("versions", "==", versions)
           .where("link", "==", false)
           .get();
         const batch = firestore.batch();

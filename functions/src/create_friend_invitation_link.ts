@@ -95,7 +95,25 @@ export const createFriendInvitationLink = functions.https.onRequest(
         });
         await batch.commit();
 
+        // create new invite record in db
+        const record: FriendInviteData = {
+          sender: senderId,
+          term,
+          versions,
+          created: admin.firestore.Timestamp.fromDate(new Date()),
+          link: true,
+          validFor,
+        };
         let inviteId;
+        try {
+          // Add the invite data to the schedule of the sender
+          const addRes = await invitesCollection.add(record);
+          inviteId = addRes.id;
+        } catch {
+          return response
+            .status(400)
+            .json(apiError("Error saving new invite record"));
+        }
         return response
           .status(200)
           .json({ link: redirectURL + `/#/invite/${inviteId}` });

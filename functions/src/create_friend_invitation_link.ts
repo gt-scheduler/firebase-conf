@@ -87,6 +87,7 @@ export const createFriendInvitationLink = functions.https.onRequest(
           .where("term", "==", term)
           .where("versions", "==", versions)
           .where("link", "==", true)
+          .where("validFor", "==", validFor)
           .get();
         const batch = firestore.batch();
         existingInvites.forEach((doc) => {
@@ -94,26 +95,7 @@ export const createFriendInvitationLink = functions.https.onRequest(
         });
         await batch.commit();
 
-        // create new invite record in db
-        const record: FriendInviteData = {
-          sender: senderId,
-          term,
-          versions,
-          created: admin.firestore.Timestamp.fromDate(new Date()),
-          link: true,
-          validFor,
-        };
         let inviteId;
-        try {
-          // Add the invite data to the schedule of the sender
-          const addRes = await invitesCollection.add(record);
-          schedulesCollection.doc(senderId).set(senderData);
-          inviteId = addRes.id;
-        } catch {
-          return response
-            .status(400)
-            .json(apiError("Error saving new invite record"));
-        }
         return response
           .status(200)
           .json({ link: redirectURL + `/#/invite/${inviteId}` });

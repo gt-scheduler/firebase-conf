@@ -3,6 +3,29 @@
 import { Timestamp } from "@google-cloud/firestore";
 
 export interface FriendInviteData {
+  sender: string;
+  term: string;
+  versions: string[];
+  created: Timestamp;
+  link: boolean; // is this invite a link ?
+  validFor?: number;
+  friend?: string;
+}
+
+export interface FriendEmailInviteData extends FriendInviteData {
+  friend: string;
+}
+
+export type CreateInviteRequestData = {
+  IDToken: string;
+  term: string;
+  versions: string[];
+  redirectURL: string;
+  friendEmail?: string;
+  validFor?: number;
+};
+
+export interface OldFriendInviteData {
   friend: string;
   sender: string;
   term: string;

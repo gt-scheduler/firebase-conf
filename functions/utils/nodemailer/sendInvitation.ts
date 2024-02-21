@@ -19,7 +19,7 @@ interface SendInvitationParameters {
   senderEmail: string;
   friendEmail: string;
   term: string;
-  versionName: string;
+  versionNames: string[];
   url?: string;
 }
 
@@ -28,7 +28,7 @@ export default async function sendInvitation({
   senderEmail,
   friendEmail,
   term,
-  versionName,
+  versionNames,
   url,
 }: SendInvitationParameters): Promise<void> {
   const inviteUrl = url + `/#/invite/${inviteId}`;
@@ -37,7 +37,7 @@ export default async function sendInvitation({
   const text = `
   You have been invited to a GT schedule by ${senderEmail}
   \tSemester: ${semester}
-  \tVersion: ${versionName}
+  \tVersion: ${versionNames.join(", ")}
   Accept the invite: ${inviteUrl}
   `;
   const html = `
@@ -50,7 +50,9 @@ export default async function sendInvitation({
         font-size: 24px;">Invitation to View Schedule</h1>  
         <p style="color: white;">Hello,</p>
         <p style="color: white;">You have been invited to a GT schedule by <a href="mailto:${senderEmail}" style="color:#1456D3">${senderEmail}</a> 
-        to import their schedule "<b>${versionName}</b>" for the ${semester}. Accepting this invite
+        to import their schedule "<b>${versionNames.join(
+          ", "
+        )}</b>" for the ${semester}. Accepting this invite
         allows you to compare this schedule to others in you Shared Schedule panel when turned on. 
         You can always remove this schedule from your view in the site after importing it if you 
         chose to do so.</p>

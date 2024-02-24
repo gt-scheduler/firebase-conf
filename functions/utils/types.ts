@@ -8,7 +8,7 @@ export interface FriendInviteData {
   versions: string[];
   created: Timestamp;
   link: boolean; // is this invite a link ?
-  validFor?: number;
+  validFor?: number; // in seconds
   friend?: string;
 }
 

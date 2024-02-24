@@ -126,7 +126,7 @@ export const createFriendInvitation = functions.https.onRequest(
           versions,
           created: admin.firestore.Timestamp.fromDate(new Date()),
           link: false,
-          validFor: 7,
+          validFor: 7 * 24 * 60 * 60,
           friend: friendId,
         };
         let inviteId;

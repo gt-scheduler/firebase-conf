@@ -1,7 +1,7 @@
 import admin from "./firebase";
 import {
   AnyScheduleData,
-  OldFriendInviteData,
+  FriendInviteData,
   Version3ScheduleData,
 } from "../utils/types";
 import * as functions from "firebase-functions";
@@ -9,7 +9,7 @@ import * as functions from "firebase-functions";
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
   "friend-invites"
-) as FirebaseFirestore.CollectionReference<OldFriendInviteData>;
+) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
 const schedulesCollection = firestore.collection(
   "schedules"
@@ -29,10 +29,11 @@ export const cleanInvites = functions.pubsub
         doc.ref.delete();
         return;
       }
-      const diffInDays =
-        (new Date().getTime() - data.created.toDate().getTime()) /
-        (1000 * 3600 * 24);
-      if (diffInDays >= 7) {
+      const defaultValidDuration = 7 * 24 * 60 * 60;
+      const validDuration = data?.validFor ?? defaultValidDuration;
+      const diffInSecs =
+        (new Date().getTime() - data.created.toDate().getTime()) / 1000;
+      if (diffInSecs >= validDuration) {
         const senderDoc = await schedulesCollection.doc(data.sender).get();
         const senderData = (await senderDoc.data()) as
           | Version3ScheduleData
@@ -41,11 +42,18 @@ export const cleanInvites = functions.pubsub
           doc.ref.delete();
           return;
         }
-        delete senderData.terms[data.term].versions[data.version].friends[
-          data.friend
-        ];
+
+        if (data.friend) {
+          data.versions.forEach(
+            (idx) =>
+              delete senderData.terms[data.term].versions[idx].friends[
+                data.friend!
+              ]
+          );
+        }
+
         await senderDoc.ref.set(senderData);
-        doc.ref.delete();
+        await doc.ref.delete();
       }
     });
   });

@@ -4,7 +4,7 @@ import * as cors from "cors";
 import { apiError } from "./api";
 
 import {
-  FriendInviteData,
+  OldFriendInviteData,
   AnyScheduleData,
   FriendData,
   Version3ScheduleData,
@@ -14,7 +14,7 @@ const auth = admin.auth();
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
   "friend-invites"
-) as FirebaseFirestore.CollectionReference<FriendInviteData>;
+) as FirebaseFirestore.CollectionReference<OldFriendInviteData>;
 
 const schedulesCollection = firestore.collection(
   "schedules"

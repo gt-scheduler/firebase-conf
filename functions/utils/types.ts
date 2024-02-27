@@ -8,6 +8,29 @@ export interface FriendInviteData {
   versions: string[];
   created: Timestamp;
   link: boolean; // is this invite a link ?
+  validFor?: number; // in seconds
+  friend?: string;
+}
+
+export interface FriendEmailInviteData extends FriendInviteData {
+  friend: string;
+}
+
+export type CreateInviteRequestData = {
+  IDToken: string;
+  term: string;
+  versions: string[];
+  redirectURL: string;
+  friendEmail?: string;
+  validFor?: number;
+};
+
+export interface OldFriendInviteData {
+  sender: string;
+  term: string;
+  versions: string[];
+  created: Timestamp;
+  link: boolean; // is this invite a link ?
   validFor?: number; // assume units of days
   friend?: string;
 }

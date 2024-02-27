@@ -8,6 +8,7 @@ import {
   AnyScheduleData,
   FriendData,
   Version3ScheduleData,
+  FriendInviteData,
 } from "../utils/types";
 
 const auth = admin.auth();
@@ -47,6 +48,13 @@ export const handleFriendInvitation = functions.https.onRequest(
             .json(apiError("Invalid invite id provided"));
         }
 
+        let friendToken: admin.auth.DecodedIdToken | undefined = undefined;
+        try {
+          friendToken = await auth.verifyIdToken(token);
+        } catch {
+          return response.status(401).json(apiError("User not found"));
+        }
+
         // Get the invite record from the invites collection
         const inviteDoc = await invitesCollection.doc(inviteId).get();
 
@@ -78,24 +86,22 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // Check if link hasn't expired by calculating the difference between the current time and the time the link was created
-        const diffInDays =
-          (new Date().getTime() - inviteData.created.toDate().getTime()) /
-          (1000 * 3600 * 24);
+        const defaultValidDuration = 7 * 24 * 60 * 60;
+        const validDuration = inviteData?.validFor ?? defaultValidDuration;
+        const diffInSecs =
+          (new Date().getTime() - inviteData.created.toDate().getTime()) / 1000;
 
-        const defaultValidDuration = 7;
-        const validDuration = inviteData?.validFor
-          ? inviteData.validFor / (3600 * 24)
-          : defaultValidDuration;
-        if (diffInDays >= validDuration) {
+        if (diffInSecs >= validDuration) {
           // Check if invite link is for a specific friend
-          if (!inviteData.link && inviteData.friend) {
-            // Delete the invite record and the invite from users shcedule if single-invite link is expired
+          if (inviteData.friend) {
+            // Delete the invite from the user's schedule if friend (non-link) invite is expired
             inviteData.versions.forEach(
               (idx) =>
                 delete senderSchedule.terms[inviteData.term].versions[idx]
                   .friends[inviteData.friend!]
             );
           }
+          // Delete the invite from the invites collection
           await inviteDoc.ref.delete();
           return response
             .status(400)
@@ -103,15 +109,6 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
-
-        let friendToken: admin.auth.DecodedIdToken | undefined = undefined;
-        if (inviteData.link && token) {
-          try {
-            friendToken = await auth.verifyIdToken(token);
-          } catch {
-            return response.status(401).json(apiError("User not found"));
-          }
-        }
 
         const friendId = inviteData.link
           ? friendToken?.uid
@@ -158,7 +155,9 @@ export const handleFriendInvitation = functions.https.onRequest(
           friendRecord.terms[inviteData.term].accessibleSchedules[
             inviteData.sender
           ] ?? [];
-        friendArr.push(...inviteData.versions);
+        friendArr.push(
+          ...inviteData.versions.filter((v) => !friendArr.includes(v))
+        );
 
         friendRecord.terms[inviteData.term].accessibleSchedules[
           inviteData.sender
@@ -175,7 +174,9 @@ export const handleFriendInvitation = functions.https.onRequest(
         // Update relevant docs
         await friendsCollection.doc(friendId).set(friendRecord);
         await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
-        await inviteDoc.ref.delete();
+        if (!inviteData.link) {
+          await inviteDoc.ref.delete();
+        }
         return response.status(202).send();
       } catch (err) {
         return response.status(400).json(apiError("Error accepting invite"));

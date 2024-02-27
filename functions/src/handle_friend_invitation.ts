@@ -4,7 +4,6 @@ import * as cors from "cors";
 import { apiError } from "./api";
 
 import {
-  OldFriendInviteData,
   AnyScheduleData,
   FriendData,
   Version3ScheduleData,
@@ -15,7 +14,7 @@ const auth = admin.auth();
 const firestore = admin.firestore();
 const invitesCollection = firestore.collection(
   "friend-invites"
-) as FirebaseFirestore.CollectionReference<OldFriendInviteData>;
+) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
 const schedulesCollection = firestore.collection(
   "schedules"
@@ -87,7 +86,7 @@ export const handleFriendInvitation = functions.https.onRequest(
 
         // Check if link hasn't expired by calculating the difference between the current time and the time the link was created
         const defaultValidDuration = 7 * 24 * 60 * 60;
-        const validDuration = inviteData?.validFor ?? defaultValidDuration;
+        const validDuration = inviteData.validFor ?? defaultValidDuration;
         const diffInSecs =
           (new Date().getTime() - inviteData.created.toDate().getTime()) / 1000;
 
@@ -103,6 +102,7 @@ export const handleFriendInvitation = functions.https.onRequest(
           }
           // Delete the invite from the invites collection
           await inviteDoc.ref.delete();
+          await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
           return response
             .status(400)
             .json(apiError("The invitation link has expired"));
@@ -121,23 +121,11 @@ export const handleFriendInvitation = functions.https.onRequest(
             .status(400)
             .json(apiError("Cannot invite self to schedule"));
         }
-        const friendEmail = (await auth.getUser(friendId)).email;
-        if (!friendEmail) {
-          return response
-            .status(400)
-            .json(apiError("Invalid friend email from DB"));
-        }
-        inviteData.versions.forEach(async (idx) => {
+
+        inviteData.versions.forEach((idx) => {
           senderSchedule.terms[inviteData.term].versions[idx].friends[
             friendId
-          ] = {
-            // email:
-            //   senderSchedule.terms[inviteData.term].versions[idx].friends[
-            //     friendId
-            //   ].email ?? friendEmail,
-            email: friendEmail,
-            status: "Accepted",
-          };
+          ].status = "Accepted";
         });
 
         let friendRecord: FriendData | undefined = (
@@ -163,11 +151,13 @@ export const handleFriendInvitation = functions.https.onRequest(
           inviteData.sender
         ] = friendArr;
         if (!(inviteData.sender in friendRecord.info)) {
-          const senderEmail =
-            (await auth.getUser(inviteData.sender)).email ?? "";
+          const senderUserObject = await auth.getUser(inviteData.sender);
+
+          const senderEmail = senderUserObject.email ?? "";
+          const senderName = senderUserObject.displayName ?? "";
           friendRecord.info[inviteData.sender] = {
             email: senderEmail,
-            name: senderEmail,
+            name: senderName,
           };
         }
 

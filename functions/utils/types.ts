@@ -25,16 +25,6 @@ export type CreateInviteRequestData = {
   validFor?: number;
 };
 
-export interface OldFriendInviteData {
-  sender: string;
-  term: string;
-  versions: string[];
-  created: Timestamp;
-  link: boolean; // is this invite a link ?
-  validFor?: number; // assume units of days
-  friend?: string;
-}
-
 // This type should automatically accept any schedule data
 export type AnyScheduleData = Version2ScheduleData | Version3ScheduleData;
 export type AnyScheduleVersion =

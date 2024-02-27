@@ -8,6 +8,7 @@ import {
   AnyScheduleData,
   FriendData,
   Version3ScheduleData,
+  FriendInviteData,
 } from "../utils/types";
 
 const auth = admin.auth();
@@ -39,12 +40,19 @@ export const handleFriendInvitation = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { inviteId } = request.body;
+        const { inviteId, token } = request.body;
 
         if (!inviteId) {
           return response
             .status(401)
             .json(apiError("Invalid invite id provided"));
+        }
+
+        let friendToken: admin.auth.DecodedIdToken | undefined = undefined;
+        try {
+          friendToken = await auth.verifyIdToken(token);
+        } catch {
+          return response.status(401).json(apiError("User not found"));
         }
 
         // Get the invite record from the invites collection
@@ -58,7 +66,7 @@ export const handleFriendInvitation = functions.https.onRequest(
             );
         }
 
-        const inviteData = inviteDoc.data();
+        const inviteData: FriendInviteData | undefined = inviteDoc.data();
 
         if (!inviteData) {
           return response
@@ -78,60 +86,98 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // Check if link hasn't expired by calculating the difference between the current time and the time the link was created
-        const diffInDays =
-          (new Date().getTime() - inviteData.created.toDate().getTime()) /
-          (1000 * 3600 * 24);
+        const defaultValidDuration = 7 * 24 * 60 * 60;
+        const validDuration = inviteData?.validFor ?? defaultValidDuration;
+        const diffInSecs =
+          (new Date().getTime() - inviteData.created.toDate().getTime()) / 1000;
 
-        if (diffInDays >= 7) {
-          // Delete the invite record and the invite from users shcedule if link is expired
-          delete senderSchedule.terms[inviteData.term].versions[
-            inviteData.version
-          ].friends[inviteData.friend];
+        if (diffInSecs >= validDuration) {
+          // Check if invite link is for a specific friend
+          if (inviteData.friend) {
+            // Delete the invite from the user's schedule if friend (non-link) invite is expired
+            inviteData.versions.forEach(
+              (idx) =>
+                delete senderSchedule.terms[inviteData.term].versions[idx]
+                  .friends[inviteData.friend!]
+            );
+          }
+          // Delete the invite from the invites collection
           await inviteDoc.ref.delete();
           return response
             .status(400)
             .json(apiError("The invitation link has expired"));
-        } else {
-          // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
-          senderSchedule.terms[inviteData.term].versions[
-            inviteData.version
-          ].friends[inviteData.friend].status = "Accepted";
+        }
 
-          let friendRecord: FriendData | undefined = (
-            await friendsCollection.doc(inviteData.friend).get()
-          ).data();
+        // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
 
-          // If the friend record doesn't exist, create it
-          if (!friendRecord) {
-            friendRecord = { terms: {}, info: {} };
-          }
-          if (!friendRecord.terms[inviteData.term]) {
-            friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
-          }
-          const friendArr =
-            friendRecord.terms[inviteData.term].accessibleSchedules[
-              inviteData.sender
-            ] ?? [];
-          friendArr.push(inviteData.version);
+        const friendId = inviteData.link
+          ? friendToken?.uid
+          : inviteData?.friend;
+        if (!friendId) {
+          return response.status(400).json(apiError("Invalid friend ID"));
+        }
+        if (inviteData.sender === friendId) {
+          return response
+            .status(400)
+            .json(apiError("Cannot invite self to schedule"));
+        }
+        const friendEmail = (await auth.getUser(friendId)).email;
+        if (!friendEmail) {
+          return response
+            .status(400)
+            .json(apiError("Invalid friend email from DB"));
+        }
+        inviteData.versions.forEach(async (idx) => {
+          senderSchedule.terms[inviteData.term].versions[idx].friends[
+            friendId
+          ] = {
+            // email:
+            //   senderSchedule.terms[inviteData.term].versions[idx].friends[
+            //     friendId
+            //   ].email ?? friendEmail,
+            email: friendEmail,
+            status: "Accepted",
+          };
+        });
 
+        let friendRecord: FriendData | undefined = (
+          await friendsCollection.doc(friendId).get()
+        ).data();
+
+        // If the friend record doesn't exist, create it
+        if (!friendRecord) {
+          friendRecord = { terms: {}, info: {} };
+        }
+        if (!friendRecord.terms[inviteData.term]) {
+          friendRecord.terms[inviteData.term] = { accessibleSchedules: {} };
+        }
+        const friendArr =
           friendRecord.terms[inviteData.term].accessibleSchedules[
             inviteData.sender
-          ] = friendArr;
-          if (!(inviteData.sender in friendRecord.info)) {
-            const friendEmail =
-              (await auth.getUser(inviteData.sender)).email ?? "";
-            friendRecord.info[inviteData.sender] = {
-              email: friendEmail,
-              name: friendEmail,
-            };
-          }
+          ] ?? [];
+        friendArr.push(
+          ...inviteData.versions.filter((v) => !friendArr.includes(v))
+        );
 
-          // Update relevant docs
-          await friendsCollection.doc(inviteData.friend).set(friendRecord);
-          await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
-          await inviteDoc.ref.delete();
-          return response.status(202).send();
+        friendRecord.terms[inviteData.term].accessibleSchedules[
+          inviteData.sender
+        ] = friendArr;
+        if (!(inviteData.sender in friendRecord.info)) {
+          const senderEmail =
+            (await auth.getUser(inviteData.sender)).email ?? "";
+          friendRecord.info[inviteData.sender] = {
+            email: senderEmail,
+            name: senderEmail,
+          };
         }
+
+        // Update relevant docs
+        await friendsCollection.doc(friendId).set(friendRecord);
+        await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
+        if (!inviteData.link) {
+          await inviteDoc.ref.delete();
+        }
+        return response.status(202).send();
       } catch (err) {
         return response.status(400).json(apiError("Error accepting invite"));
       }

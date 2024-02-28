@@ -30,7 +30,7 @@ export const createFriendInvitationLink = functions.https.onRequest(
           // This request should be made with content type is application/x-www-form-urlencoded.
           // This is done to prevent a pre-flight CORS request made to the firebase function
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
-          request.body = JSON.parse(request.body);
+          request.body = JSON.parse(request.body.data);
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
@@ -116,7 +116,7 @@ export const createFriendInvitationLink = functions.https.onRequest(
         }
         return response
           .status(200)
-          .json({ link: redirectURL + `/#/invite/${inviteId}` });
+          .json({ link: redirectURL + `#/invite/${inviteId}` });
       } catch (err) {
         console.error(err);
         return response.status(400).json(apiError("Error creating invite"));

@@ -37,7 +37,7 @@ export const handleFriendInvitation = functions.https.onRequest(
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
           request.body = JSON.parse(request.body.data);
         } catch {
-          response.status(401).json(apiError("Bad request"));
+          return response.status(401).json(apiError("Bad request"));
         }
         const { inviteId, token } = request.body;
 
@@ -122,10 +122,20 @@ export const handleFriendInvitation = functions.https.onRequest(
             .json(apiError("Cannot invite self to schedule"));
         }
 
+        const friendEmail = (await auth.getUser(friendId)).email;
+        if (!friendEmail) {
+          return response
+            .status(400)
+            .json(apiError("Invalid friend email from DB"));
+        }
+
         inviteData.versions.forEach((idx) => {
           senderSchedule.terms[inviteData.term].versions[idx].friends[
             friendId
-          ].status = "Accepted";
+          ] = {
+            email: friendEmail,
+            status: "Accepted",
+          };
         });
 
         let friendRecord: FriendData | undefined = (
@@ -150,11 +160,12 @@ export const handleFriendInvitation = functions.https.onRequest(
         friendRecord.terms[inviteData.term].accessibleSchedules[
           inviteData.sender
         ] = friendArr;
-        if (!(inviteData.sender in friendRecord.info)) {
-          const senderUserObject = await auth.getUser(inviteData.sender);
 
-          const senderEmail = senderUserObject.email ?? "";
-          const senderName = senderUserObject.displayName ?? "";
+        const senderUserObject = await auth.getUser(inviteData.sender);
+
+        const senderEmail = senderUserObject.email ?? "";
+        const senderName = senderUserObject.displayName ?? "";
+        if (!(inviteData.sender in friendRecord.info)) {
           friendRecord.info[inviteData.sender] = {
             email: senderEmail,
             name: senderName,
@@ -167,8 +178,11 @@ export const handleFriendInvitation = functions.https.onRequest(
         if (!inviteData.link) {
           await inviteDoc.ref.delete();
         }
-        return response.status(202).send();
+        return response.status(202).send({
+          email: senderEmail,
+        });
       } catch (err) {
+        console.log(err);
         return response.status(400).json(apiError("Error accepting invite"));
       }
     });

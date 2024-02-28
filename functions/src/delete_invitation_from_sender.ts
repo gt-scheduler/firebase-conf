@@ -30,12 +30,12 @@ export const deleteInvitationFromSender = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { IDToken, friendId, term, versions } = request.body;
+        const { IDToken, friendId, term, version } = request.body;
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
-        if (!friendId || !term || !versions) {
+        if (!friendId || !term || !version) {
           return response
             .status(400)
             .json(apiError("Invalid arguments provided"));
@@ -65,7 +65,7 @@ export const deleteInvitationFromSender = functions.https.onRequest(
             return;
           }
           const currVersions: string[] = doc.get("versions");
-          const newVersions = currVersions.filter((v) => !versions.includes(v));
+          const newVersions = currVersions.filter((v) => v !== version);
           if (newVersions.length === 0) {
             batch.delete(doc.ref);
           } else if (newVersions.length !== currVersions.length) {
@@ -83,12 +83,14 @@ export const deleteInvitationFromSender = functions.https.onRequest(
           const accessibleSchedules =
             friendData.terms[term].accessibleSchedules;
           accessibleSchedules[senderId] = accessibleSchedules[senderId].filter(
-            (version_) => !versions.includes(version_)
+            (version_) => version !== version_
           );
           if (accessibleSchedules[senderId].length === 0) {
             delete accessibleSchedules[senderId];
           }
           await friendsCollection.doc(friendId).set(friendData);
+        } else {
+          console.log("hehe")
         }
         return response.status(204).json({ message: "Deleted successfully" });
       } catch (err) {

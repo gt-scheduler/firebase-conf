@@ -90,11 +90,13 @@ export const deleteInvitationFromFriend = functions.https.onRequest(
                   return;
                 }
                 const currVersions: string[] = doc.get("versions");
-                const newVersions = currVersions.filter((v) => !versions.includes(v))
+                const newVersions = currVersions.filter(
+                  (v) => !versions.includes(v)
+                );
                 if (newVersions.length === 0) {
                   batch.delete(doc.ref);
                 } else if (newVersions.length !== currVersions.length) {
-                  batch.update(doc.ref, {"versions": newVersions})
+                  batch.update(doc.ref, { versions: newVersions });
                 }
               });
               await batch.commit();
@@ -104,8 +106,10 @@ export const deleteInvitationFromFriend = functions.https.onRequest(
                 senderData.terms[term].versions[version]?.friends?.[friendId]
               ) {
                 versions.forEach((version) => {
-                  delete senderData.terms[term].versions[version]?.friends?.[friendId]
-                })
+                  delete senderData.terms[term].versions[version]?.friends?.[
+                    friendId
+                  ];
+                });
               }
             } catch {
               // pass

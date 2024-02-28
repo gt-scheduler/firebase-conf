@@ -89,8 +89,6 @@ export const deleteInvitationFromSender = functions.https.onRequest(
             delete accessibleSchedules[senderId];
           }
           await friendsCollection.doc(friendId).set(friendData);
-        } else {
-          console.log("hehe")
         }
         return response.status(204).json({ message: "Deleted successfully" });
       } catch (err) {

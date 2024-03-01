@@ -3,7 +3,13 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import { FriendData, FriendInviteData } from "../utils/types";
+import {
+  FriendData,
+  FriendInviteData,
+  AnyScheduleData,
+  Version3ScheduleData,
+  ScheduleDeletionRequest,
+} from "../utils/types";
 
 const firestore = admin.firestore();
 const auth = admin.auth();
@@ -12,13 +18,17 @@ const invitesCollection = firestore.collection(
   "friend-invites"
 ) as FirebaseFirestore.CollectionReference<FriendInviteData>;
 
+const schedulesCollection = firestore.collection(
+  "schedules"
+) as FirebaseFirestore.CollectionReference<AnyScheduleData>;
+
 const friendsCollection = firestore.collection(
   "friends"
 ) as FirebaseFirestore.CollectionReference<FriendData>;
 
 const corsHandler = cors({ origin: true });
 
-export const deleteInvitationFromSender = functions.https.onRequest(
+export const deleteSharedSchedule = functions.https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {
@@ -30,12 +40,23 @@ export const deleteInvitationFromSender = functions.https.onRequest(
         } catch {
           response.status(401).json(apiError("Bad request"));
         }
-        const { IDToken, friendId, term, version } = request.body;
+
+        const {
+          IDToken,
+          otherUserId,
+          term,
+          versions: versionsTemp,
+          owner,
+        }: ScheduleDeletionRequest = request.body;
+
+        const versions = Array.isArray(versionsTemp)
+          ? versionsTemp
+          : [versionsTemp];
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
-        if (!friendId || !term || !version) {
+        if (!otherUserId || !term || !versions) {
           return response
             .status(400)
             .json(apiError("Invalid arguments provided"));
@@ -50,46 +71,72 @@ export const deleteInvitationFromSender = functions.https.onRequest(
         }
 
         // Get user UID from the decoded token
-        const senderId = decodedToken.uid;
+        const requesterId = decodedToken.uid;
 
-        // find and delete existing invites for the same sender, friend, term, and version
+        const senderId = owner ? requesterId : otherUserId;
+        const friendId = owner ? otherUserId : requesterId;
+
         const existingInvites = await invitesCollection
           .where("sender", "==", senderId)
           .where("friend", "==", friendId)
           .where("term", "==", term)
           // .where("version", "==", version)
           .get();
-        const batch = firestore.batch();
-        existingInvites.forEach((doc) => {
-          if (doc.get("link")) {
-            return;
-          }
-          const currVersions: string[] = doc.get("versions");
-          const newVersions = currVersions.filter((v) => v !== version);
-          if (newVersions.length === 0) {
-            batch.delete(doc.ref);
-          } else if (newVersions.length !== currVersions.length) {
-            batch.update(doc.ref, { versions: newVersions });
-          }
-        });
-        await batch.commit();
+
+        const scheduleResponse = await schedulesCollection.doc(senderId).get();
+        const scheduleData: Version3ScheduleData | undefined =
+          scheduleResponse.data() as Version3ScheduleData | undefined;
 
         const friendData = (await friendsCollection.doc(friendId).get()).data();
-        if (
-          friendData?.terms &&
-          friendData.terms[term]?.accessibleSchedules &&
-          friendData.terms[term].accessibleSchedules[senderId]
-        ) {
-          const accessibleSchedules =
-            friendData.terms[term].accessibleSchedules;
-          accessibleSchedules[senderId] = accessibleSchedules[senderId].filter(
-            (version_) => version !== version_
-          );
-          if (accessibleSchedules[senderId].length === 0) {
-            delete accessibleSchedules[senderId];
-          }
+        const accessibleSchedules =
+          friendData?.terms?.[term]?.accessibleSchedules;
+
+        // find and delete existing invites for the same sender, friend, term, and version
+        // also deletes friend invites that show up on the sender's invitation modal
+        await Promise.allSettled(
+          versions.map(async (version) => {
+            try {
+              const batch = firestore.batch();
+              existingInvites.forEach((doc) => {
+                if (doc.get("link")) {
+                  return;
+                }
+                const currVersions: string[] = doc.get("versions");
+                const newVersions = currVersions.filter((v) => v !== version);
+                if (newVersions.length === 0) {
+                  batch.delete(doc.ref);
+                } else if (newVersions.length !== currVersions.length) {
+                  batch.update(doc.ref, { versions: newVersions });
+                }
+              });
+              await batch.commit();
+
+              delete scheduleData?.terms[term]?.versions[version]?.friends?.[
+                friendId
+              ];
+
+              if (accessibleSchedules?.[senderId]) {
+                accessibleSchedules[senderId] = accessibleSchedules[
+                  senderId
+                ].filter((v) => v !== version);
+                if (accessibleSchedules[senderId].length === 0) {
+                  delete accessibleSchedules[senderId];
+                }
+              }
+            } catch {
+              // pass
+            }
+          })
+        );
+
+        if (scheduleData) {
+          await schedulesCollection.doc(senderId).set(scheduleData);
+        }
+
+        if (friendData) {
           await friendsCollection.doc(friendId).set(friendData);
         }
+
         return response.status(204).json({ message: "Deleted successfully" });
       } catch (err) {
         console.error(err);

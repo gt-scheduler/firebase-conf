@@ -119,7 +119,7 @@ export type ScheduleDeletionRequest = {
   /**
    * token of account that requested the schedule deletion
    */
-  IDToken: string;
+  IDToken: string | void;
   /**
    * ID of the INVITEE if the deletion requester is the INVITER
    * ID of the INVITER if the deletion requester is the INVITEE

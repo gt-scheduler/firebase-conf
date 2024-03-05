@@ -97,6 +97,17 @@ export const deleteSharedSchedule = functions.https.onRequest(
                 if (doc.get("link")) {
                   return;
                 }
+
+                // Verify requester ID
+                if (
+                  (owner && doc.get("sender") !== requesterId) ||
+                  (!owner && doc.get("friendId") !== requesterId)
+                ) {
+                  return response
+                    .status(400)
+                    .json(apiError("Error deleting shared schedule"));
+                }
+
                 const currVersions: string[] = doc.get("versions");
                 const newVersions = currVersions.filter((v) => v !== version);
                 if (newVersions.length === 0) {
@@ -120,8 +131,11 @@ export const deleteSharedSchedule = functions.https.onRequest(
                   delete accessibleSchedules[senderId];
                 }
               }
+              return;
             } catch {
-              return response.status(400).json(apiError("Error deleting shared schedule"))
+              return response
+                .status(400)
+                .json(apiError("Error deleting shared schedule"));
             }
           })
         );
@@ -137,7 +151,9 @@ export const deleteSharedSchedule = functions.https.onRequest(
         return response.status(204).json({ message: "Deleted successfully" });
       } catch (err) {
         console.error(err);
-        return response.status(400).json(apiError("Error deleting shared schedule"));
+        return response
+          .status(400)
+          .json(apiError("Error deleting shared schedule"));
       }
     });
   }

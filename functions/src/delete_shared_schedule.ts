@@ -38,25 +38,21 @@ export const deleteSharedSchedule = functions.https.onRequest(
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
           request.body = JSON.parse(request.body.data);
         } catch {
-          response.status(401).json(apiError("Bad request"));
+          return response.status(401).json(apiError("Bad request"));
         }
 
         const {
           IDToken,
-          otherUserId,
+          peerUserId,
           term,
-          versions: versionsTemp,
+          versions,
           owner,
         }: ScheduleDeletionRequest = request.body;
-
-        const versions = Array.isArray(versionsTemp)
-          ? versionsTemp
-          : [versionsTemp];
 
         if (!IDToken) {
           return response.status(401).json(apiError("IDToken not provided"));
         }
-        if (!otherUserId || !term || !versions) {
+        if (!peerUserId || !term || !versions) {
           return response
             .status(400)
             .json(apiError("Invalid arguments provided"));
@@ -73,8 +69,8 @@ export const deleteSharedSchedule = functions.https.onRequest(
         // Get user UID from the decoded token
         const requesterId = decodedToken.uid;
 
-        const senderId = owner ? requesterId : otherUserId;
-        const friendId = owner ? otherUserId : requesterId;
+        const senderId = owner ? requesterId : peerUserId;
+        const friendId = owner ? peerUserId : requesterId;
 
         const existingInvites = await invitesCollection
           .where("sender", "==", senderId)
@@ -105,7 +101,8 @@ export const deleteSharedSchedule = functions.https.onRequest(
                 const newVersions = currVersions.filter((v) => v !== version);
                 if (newVersions.length === 0) {
                   batch.delete(doc.ref);
-                } else if (newVersions.length !== currVersions.length) {
+                } else {
+                  // Update versions list if entries were deleted or changed but list is not empty
                   batch.update(doc.ref, { versions: newVersions });
                 }
               });
@@ -124,7 +121,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
                 }
               }
             } catch {
-              // pass
+              return response.status(400).json(apiError("Error deleting shared schedule"))
             }
           })
         );
@@ -140,7 +137,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
         return response.status(204).json({ message: "Deleted successfully" });
       } catch (err) {
         console.error(err);
-        return response.status(400).json(apiError("Error creating invite"));
+        return response.status(400).json(apiError("Error deleting shared schedule"));
       }
     });
   }

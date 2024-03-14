@@ -42,35 +42,29 @@ export const handleFriendInvitation = functions.https.onRequest(
         const { inviteId, token } = request.body;
 
         if (!inviteId) {
-          return response
-            .status(401)
-            .json(apiError("Invalid invite id provided"));
+          return response.status(401).json(apiError("invalid-invite"));
         }
 
         let friendToken: admin.auth.DecodedIdToken | undefined = undefined;
         try {
           friendToken = await auth.verifyIdToken(token);
         } catch {
-          return response.status(401).json(apiError("User not found"));
+          return response.status(401).json(apiError("user-not-found"));
         }
 
         // Get the invite record from the invites collection
         const inviteDoc = await invitesCollection.doc(inviteId).get();
 
         if (!inviteDoc.exists) {
-          return response
-            .status(400)
-            .json(
-              apiError("This link has either expired or has already been used")
-            );
+          return response.status(400).json(
+            apiError("invalid-invite") // This link has either expired or has already been used
+          );
         }
 
         const inviteData: FriendInviteData | undefined = inviteDoc.data();
 
         if (!inviteData) {
-          return response
-            .status(401)
-            .json(apiError("Could not find the record for this link"));
+          return response.status(401).json(apiError("invalid-invite")); // Could not find the record for this link
         }
 
         // Get the sender's schedule - it has to be version 3 (an invite was sent from this user)
@@ -79,9 +73,7 @@ export const handleFriendInvitation = functions.https.onRequest(
         ).data() as Version3ScheduleData | undefined;
 
         if (!senderSchedule) {
-          return response
-            .status(400)
-            .json(apiError("The sender's account has been deleted"));
+          return response.status(400).json(apiError("invalid-invite")); // The sender's account has been deleted
         }
 
         // Check if link hasn't expired by calculating the difference between the current time and the time the link was created
@@ -103,9 +95,7 @@ export const handleFriendInvitation = functions.https.onRequest(
           // Delete the invite from the invites collection
           await inviteDoc.ref.delete();
           await schedulesCollection.doc(inviteData.sender).set(senderSchedule);
-          return response
-            .status(400)
-            .json(apiError("The invitation link has expired"));
+          return response.status(400).json(apiError("invite-expired")); // The invitation link has expired
         }
 
         // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
@@ -114,8 +104,9 @@ export const handleFriendInvitation = functions.https.onRequest(
           ? friendToken?.uid
           : inviteData?.friend;
         if (!friendId) {
-          return response.status(400).json(apiError("Invalid friend ID"));
+          return response.status(400).json(apiError("invalid-invite")); // Invalid friend ID
         }
+
         if (inviteData.sender === friendId) {
           return response
             .status(400)
@@ -182,7 +173,6 @@ export const handleFriendInvitation = functions.https.onRequest(
           email: senderEmail,
         });
       } catch (err) {
-        console.log(err);
         return response.status(400).json(apiError("Error accepting invite"));
       }
     });

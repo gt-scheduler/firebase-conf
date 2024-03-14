@@ -7,7 +7,7 @@ This repository contains the configuration for [Firebase Cloud Firestore](https:
 
 ## 🚀 Developing functions
 
-To work with with the Cloud Functions in this repository, run the following commands from within the `/functions` directory (make sure you have Node.js 14+ and Yarn v1 installed beforehand):
+To work with with the Cloud Functions in this repository, run the following commands from within the `/functions` directory (make sure you have Node.js 18+ and Yarn v1 installed beforehand):
 
 ```sh
 npm install -g firebase-tools

@@ -1,11 +1,29 @@
 // This file is a compilation of Firebase collections' data schemas.
 
+import { Timestamp } from "@google-cloud/firestore";
+
 export interface FriendInviteData {
-  friend: string;
   sender: string;
   term: string;
-  version: string;
+  versions: string[];
+  created: Timestamp;
+  link: boolean; // is this invite a link ?
+  validFor?: number; // in seconds
+  friend?: string;
 }
+
+export interface FriendEmailInviteData extends FriendInviteData {
+  friend: string;
+}
+
+export type CreateInviteRequestData = {
+  IDToken: string;
+  term: string;
+  versions: string[];
+  redirectURL: string;
+  friendEmail?: string;
+  validFor?: number;
+};
 
 // This type should automatically accept any schedule data
 export type AnyScheduleData = Version2ScheduleData | Version3ScheduleData;
@@ -63,6 +81,12 @@ export interface Version3ScheduleVersion {
   name: string;
   createdAt: string;
   schedule: Version3Schedule;
+  friends: Record<string, FriendShareData>;
+}
+
+export interface FriendShareData {
+  status: "Pending" | "Accepted";
+  email: string;
 }
 
 export interface Version3Schedule {
@@ -76,8 +100,17 @@ export interface Version3Schedule {
 
 export interface FriendData {
   terms: Record<string, FriendTermData>;
+  info: FriendInfo;
 }
 
 export interface FriendTermData {
   accessibleSchedules: Record<string, string[]>;
 }
+
+export type FriendInfo = Record<
+  string,
+  {
+    name: string;
+    email: string;
+  }
+>;

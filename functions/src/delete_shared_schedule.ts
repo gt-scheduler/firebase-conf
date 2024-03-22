@@ -87,6 +87,10 @@ export const deleteSharedSchedule = functions.https.onRequest(
         const accessibleSchedules =
           friendData?.terms?.[term]?.accessibleSchedules;
 
+        await firestore.runTransaction(async (transaction) => {
+          transaction.get()
+        });
+
         // find and delete existing invites for the same sender, friend, term, and version
         // also deletes friend invites that show up on the sender's invitation modal
         await Promise.allSettled(
@@ -94,7 +98,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
             try {
               const batch = firestore.batch();
               existingInvites.forEach((doc) => {
-                if (doc.get("link")) {
+                if (doc.get("link")) { 
                   return;
                 }
 

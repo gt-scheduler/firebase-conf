@@ -72,84 +72,105 @@ export const deleteSharedSchedule = functions.https.onRequest(
         const senderId = owner ? requesterId : peerUserId;
         const friendId = owner ? peerUserId : requesterId;
 
-        const existingInvites = await invitesCollection
-          .where("sender", "==", senderId)
-          .where("friend", "==", friendId)
-          .where("term", "==", term)
-          // .where("version", "==", version)
-          .get();
-
-        const scheduleResponse = await schedulesCollection.doc(senderId).get();
-        const scheduleData: Version3ScheduleData | undefined =
-          scheduleResponse.data() as Version3ScheduleData | undefined;
-
-        const friendData = (await friendsCollection.doc(friendId).get()).data();
-        const accessibleSchedules =
-          friendData?.terms?.[term]?.accessibleSchedules;
-
-        await firestore.runTransaction(async (transaction) => {
-          transaction.get()
-        });
-
         // find and delete existing invites for the same sender, friend, term, and version
         // also deletes friend invites that show up on the sender's invitation modal
-        await Promise.allSettled(
-          versions.map(async (version) => {
-            try {
-              const batch = firestore.batch();
-              existingInvites.forEach((doc) => {
-                if (doc.get("link")) { 
-                  return;
-                }
+        try {
+          await firestore.runTransaction(async (transaction) => {
+            // Fetch invite documents
+            const existingInvitesQuery = await invitesCollection
+              .where("sender", "==", senderId)
+              .where("friend", "==", friendId)
+              .where("term", "==", term)
+              .where("versions", "array-contains-any", versions);
+            const existingInvites = await transaction.get(existingInvitesQuery);
 
-                // Verify requester ID
-                if (
-                  (owner && doc.get("sender") !== requesterId) ||
-                  (!owner && doc.get("friendId") !== requesterId)
-                ) {
-                  return response
-                    .status(400)
-                    .json(apiError("Error deleting shared schedule"));
-                }
+            // Fetch schedule document
+            const scheduleData: Version3ScheduleData | undefined = (
+              await transaction.get(schedulesCollection.doc(senderId))
+            ).data() as Version3ScheduleData | undefined;
 
-                const currVersions: string[] = doc.get("versions");
-                const newVersions = currVersions.filter((v) => v !== version);
-                if (newVersions.length === 0) {
-                  batch.delete(doc.ref);
-                } else {
-                  // Update versions list if entries were deleted or changed but list is not empty
-                  batch.update(doc.ref, { versions: newVersions });
-                }
-              });
-              await batch.commit();
+            // Fetch friend document and accessible schedules
+            const friendData = (
+              await transaction.get(friendsCollection.doc(friendId))
+            ).data();
 
+            const accessibleSchedules =
+              friendData?.terms?.[term]?.accessibleSchedules;
+
+            let errorCode = 0;
+
+            for (const doc of existingInvites.docs) {
+              // Do not delete link-type invitations
+              if (doc.get("link")) {
+                return;
+              }
+
+              // Verify requester ID
+              if (
+                (owner && doc.get("sender") !== requesterId) ||
+                (!owner && doc.get("friendId") !== requesterId)
+              ) {
+                errorCode = 1;
+                break;
+              }
+
+              const currVersions: string[] = doc.get("versions");
+              const newVersions = currVersions.filter((v) =>
+                versions.includes(v)
+              );
+              if (newVersions.length === 0) {
+                transaction.delete(doc.ref);
+              } else {
+                // Update versions list if entries were deleted or changed but list is not empty
+                transaction.update(doc.ref, { versions: newVersions });
+              }
+            }
+
+            versions.forEach((version) => {
               delete scheduleData?.terms[term]?.versions[version]?.friends?.[
                 friendId
               ];
+            });
 
-              if (accessibleSchedules?.[senderId]) {
-                accessibleSchedules[senderId] = accessibleSchedules[
-                  senderId
-                ].filter((v) => v !== version);
-                if (accessibleSchedules[senderId].length === 0) {
-                  delete accessibleSchedules[senderId];
-                }
+            if (accessibleSchedules?.[senderId]) {
+              accessibleSchedules[senderId] = accessibleSchedules[
+                senderId
+              ].filter((v) => versions.includes(v));
+              if (accessibleSchedules[senderId].length === 0) {
+                delete accessibleSchedules[senderId];
               }
-              return;
-            } catch {
-              return response
-                .status(400)
-                .json(apiError("Error deleting shared schedule"));
             }
-          })
-        );
 
-        if (scheduleData) {
-          await schedulesCollection.doc(senderId).set(scheduleData);
-        }
+            if (scheduleData) {
+              await transaction.set(
+                schedulesCollection.doc(senderId),
+                scheduleData
+              );
+            }
 
-        if (friendData) {
-          await friendsCollection.doc(friendId).set(friendData);
+            if (friendData) {
+              await transaction.set(
+                friendsCollection.doc(friendId),
+                friendData
+              );
+            }
+
+            if (errorCode) {
+              let errorMsg = "";
+              switch (errorCode) {
+                case 1:
+                  errorMsg =
+                    "Unathorized deletion request - user token does not match invitation creator/recipient";
+              }
+              throw new Error(errorMsg);
+            }
+          });
+        } catch (err) {
+          return response
+            .status(401)
+            .json(
+              apiError(`Database call failed to delete version(s) - ${err}`)
+            );
         }
 
         return response.status(204).json({ message: "Deleted successfully" });

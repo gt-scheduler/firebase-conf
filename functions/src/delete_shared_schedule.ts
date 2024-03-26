@@ -116,7 +116,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
 
               const currVersions: string[] = doc.get("versions");
               const newVersions = currVersions.filter((v) =>
-                versions.includes(v)
+                !versions.includes(v)
               );
               if (newVersions.length === 0) {
                 transaction.delete(doc.ref);
@@ -135,7 +135,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
             if (accessibleSchedules?.[senderId]) {
               accessibleSchedules[senderId] = accessibleSchedules[
                 senderId
-              ].filter((v) => versions.includes(v));
+              ].filter((v) => !versions.includes(v));
               if (accessibleSchedules[senderId].length === 0) {
                 delete accessibleSchedules[senderId];
               }

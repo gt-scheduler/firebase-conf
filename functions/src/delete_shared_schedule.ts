@@ -172,8 +172,8 @@ export const deleteSharedSchedule = functions.https.onRequest(
               apiError(`Database call failed to delete version(s) - ${err}`)
             );
         }
-
-        return response.status(204).json({ message: "Deleted successfully" });
+        console.log("test");
+        return response.status(200).json({ message: "Deleted successfully" });
       } catch (err) {
         console.error(err);
         return response

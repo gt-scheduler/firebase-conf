@@ -67,6 +67,11 @@ export const handleFriendInvitation = functions.https.onRequest(
           return response.status(401).json(apiError("invalid-invite")); // Could not find the record for this link
         }
 
+        // if the invite type is email, verify that it was meant for provided token
+        if (!inviteData.link && inviteData.friend !== friendToken.uid) {
+          return response.status(400).json(apiError("friend-mismatch"));
+        }
+
         // Get the sender's schedule - it has to be version 3 (an invite was sent from this user)
         const senderSchedule: Version3ScheduleData | undefined = (
           await schedulesCollection.doc(inviteData.sender).get()
@@ -99,7 +104,6 @@ export const handleFriendInvitation = functions.https.onRequest(
         }
 
         // If the link is not expired, update the sender's schedule in the schedules collection and the friend's record in the friends collection
-
         const friendId = inviteData.link
           ? friendToken?.uid
           : inviteData?.friend;

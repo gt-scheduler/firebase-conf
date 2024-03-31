@@ -114,3 +114,27 @@ export type FriendInfo = Record<
     email: string;
   }
 >;
+
+export type ScheduleDeletionRequest = {
+  /**
+   * token of account that requested the schedule deletion
+   */
+  IDToken: string | void;
+  /**
+   * ID of the INVITEE if the deletion requester is the INVITER
+   * ID of the INVITER if the deletion requester is the INVITEE
+   */
+  peerUserId: string;
+  /**
+   * term that schedule version(s) belong to
+   */
+  term: string;
+  /**
+   * shared schedule version(s) for deletion
+   */
+  versions: string[];
+  /**
+   * whether the schedule version belongs to the requester
+   */
+  owner: boolean;
+};

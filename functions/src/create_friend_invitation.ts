@@ -106,12 +106,14 @@ export const createFriendInvitation = functions
             .json(apiError("Email does not exist in database"));
         }
 
+        const sortedVersions = versions.sort();
+
         // find and delete existing invites for the same sender, friend, term, and version
         const existingInvites = await invitesCollection
           .where("sender", "==", senderId)
           .where("friend", "==", friendId)
           .where("term", "==", term)
-          .where("versions", "==", versions)
+          .where("versions", "==", sortedVersions)
           .where("link", "==", false)
           .get();
         const batch = firestore.batch();
@@ -124,7 +126,7 @@ export const createFriendInvitation = functions
         const record: FriendEmailInviteData = {
           sender: senderId,
           term,
-          versions,
+          versions: sortedVersions,
           created: admin.firestore.Timestamp.fromDate(new Date()),
           link: false,
           validFor: 7 * 24 * 60 * 60,
@@ -134,7 +136,7 @@ export const createFriendInvitation = functions
         try {
           // Add the invite data to the schedule of the sender
           const addRes = await invitesCollection.add(record);
-          versions.forEach((v) => {
+          sortedVersions.forEach((v) => {
             if (!senderData.terms[term].versions[v].friends) {
               senderData.terms[term].versions[v].friends = {};
             }

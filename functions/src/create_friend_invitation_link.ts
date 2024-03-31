@@ -82,11 +82,13 @@ export const createFriendInvitationLink = functions
             .json(apiError("Cannot make link for invalid schedule version"));
         }
 
+        const sortedVersions = versions.sort();
+
         // find and delete existing links for the same sender, term, and version
         const existingInvites = await invitesCollection
           .where("sender", "==", senderId)
           .where("term", "==", term)
-          .where("versions", "==", versions)
+          .where("versions", "==", sortedVersions)
           .where("link", "==", true)
           .where("validFor", "==", validFor)
           .get();
@@ -100,7 +102,7 @@ export const createFriendInvitationLink = functions
         const record: FriendInviteData = {
           sender: senderId,
           term,
-          versions,
+          versions: sortedVersions,
           created: admin.firestore.Timestamp.fromDate(new Date()),
           link: true,
           validFor,

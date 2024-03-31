@@ -19,8 +19,9 @@ const schedulesCollection = firestore.collection(
 This function is called every week to clean up the friend-invites collection. We only want to keep the invites made in the past week.
 */
 
-export const cleanInvites = functions.pubsub
-  .schedule("every 1 week")
+export const cleanInvites = functions
+  .region("us-east1")
+  .pubsub.schedule("every 1 week")
   .onRun(async () => {
     const docs = await invitesCollection.get();
     docs.forEach(async (doc) => {

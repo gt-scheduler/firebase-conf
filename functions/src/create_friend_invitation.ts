@@ -125,7 +125,7 @@ export const createFriendInvitation = functions.https.onRequest(
         const record: FriendEmailInviteData = {
           sender: senderId,
           term,
-          versions : sortedVersions,
+          versions: sortedVersions,
           created: admin.firestore.Timestamp.fromDate(new Date()),
           link: false,
           validFor: 7 * 24 * 60 * 60,

@@ -28,8 +28,9 @@ const friendsCollection = firestore.collection(
 
 const corsHandler = cors({ origin: true });
 
-export const deleteSharedSchedule = functions.https.onRequest(
-  async (request, response) => {
+export const deleteSharedSchedule = functions
+  .region("us-east1")
+  .https.onRequest(async (request, response) => {
     corsHandler(request, response, async () => {
       try {
         try {
@@ -115,8 +116,8 @@ export const deleteSharedSchedule = functions.https.onRequest(
               }
 
               const currVersions: string[] = doc.get("versions");
-              const newVersions = currVersions.filter((v) =>
-                !versions.includes(v)
+              const newVersions = currVersions.filter(
+                (v) => !versions.includes(v)
               );
               if (newVersions.length === 0) {
                 transaction.delete(doc.ref);
@@ -179,5 +180,4 @@ export const deleteSharedSchedule = functions.https.onRequest(
           .json(apiError("Error deleting shared schedule"));
       }
     });
-  }
-);
+  });

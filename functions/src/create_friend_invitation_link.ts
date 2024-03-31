@@ -80,8 +80,8 @@ export const createFriendInvitationLink = functions.https.onRequest(
             .status(400)
             .json(apiError("Cannot make link for invalid schedule version"));
         }
-        
-        const sortedVersions = versions.sort()
+
+        const sortedVersions = versions.sort();
 
         // find and delete existing links for the same sender, term, and version
         const existingInvites = await invitesCollection

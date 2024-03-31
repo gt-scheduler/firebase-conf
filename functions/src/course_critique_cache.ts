@@ -49,8 +49,9 @@ const corsHandler = cors({ origin: true });
 // that get scheduled on the same process
 const globalCache: Record<string, CacheItem> = {};
 
-export const getCourseDataFromCourseCritique = functions.https.onRequest(
-  (request, response) =>
+export const getCourseDataFromCourseCritique = functions
+  .region("us-east1")
+  .https.onRequest((request, response) =>
     corsHandler(request, response, async () => {
       // Get the course ID from the request
       const courseID = request.query["courseID"];
@@ -209,7 +210,7 @@ export const getCourseDataFromCourseCritique = functions.https.onRequest(
         c: contentType,
       });
     })
-);
+  );
 
 function getCacheItemFromGlobalCache(courseID: string): CacheItem | null {
   const item = globalCache[courseID];

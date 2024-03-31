@@ -24,7 +24,7 @@ const auth = admin.auth();
 const corsHandler = cors({ origin: true });
 
 /* This endpoint is called when a user wants to send an invitation*/
-export const createFriendInvitation = functions.https.onRequest(
+export const createFriendInvitation = functions.region("us-east1").https.onRequest(
   async (request, response) => {
     corsHandler(request, response, async () => {
       try {

@@ -27,8 +27,9 @@ const friendsCollection = firestore.collection(
 const corsHandler = cors({ origin: true });
 
 /* This endpoint is called when a user clicks on an invitation link - checks if invites are valid and handles accepting them*/
-export const handleFriendInvitation = functions.https.onRequest(
-  async (request, response) => {
+export const handleFriendInvitation = functions
+  .region("us-east1")
+  .https.onRequest(async (request, response) => {
     corsHandler(request, response, async () => {
       try {
         try {
@@ -180,5 +181,4 @@ export const handleFriendInvitation = functions.https.onRequest(
         return response.status(400).json(apiError("Error accepting invite"));
       }
     });
-  }
-);
+  });

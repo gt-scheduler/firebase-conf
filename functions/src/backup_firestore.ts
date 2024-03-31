@@ -16,8 +16,9 @@ const bucket = "gs://gt-scheduler-web-prod-firestore-backup";
  * Based off of the following article:
  * https://medium.com/@bastihumann/how-to-backup-firestore-the-firebase-way-874da6d75082
  */
-export const backupFirestore = functions.pubsub
-  .schedule("every day 00:00")
+export const backupFirestore = functions
+  .region("us-east1")
+  .pubsub.schedule("every day 00:00")
   .onRun(async () => {
     const projectId = process.env.GCP_PROJECT ?? process.env.GCLOUD_PROJECT;
     if (projectId == null) {

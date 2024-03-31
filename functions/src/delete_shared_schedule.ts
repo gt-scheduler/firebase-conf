@@ -102,7 +102,7 @@ export const deleteSharedSchedule = functions.https.onRequest(
             for (const doc of existingInvites.docs) {
               // Do not delete link-type invitations
               if (doc.get("link")) {
-                return;
+                continue;
               }
 
               // Verify requester ID
@@ -174,7 +174,6 @@ export const deleteSharedSchedule = functions.https.onRequest(
         }
         return response.status(200).json({ message: "Deleted successfully" });
       } catch (err) {
-        console.error(err);
         return response
           .status(400)
           .json(apiError("Error deleting shared schedule"));

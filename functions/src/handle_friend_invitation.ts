@@ -113,16 +113,12 @@ export const handleFriendInvitation = functions
         }
 
         if (inviteData.sender === friendId) {
-          return response
-            .status(400)
-            .json(apiError("accepting-self-schedule"));
+          return response.status(400).json(apiError("accepting-self-schedule"));
         }
 
         const friendEmail = (await auth.getUser(friendId)).email;
         if (!friendEmail) {
-          return response
-            .status(400)
-            .json(apiError("friend-not-found"));
+          return response.status(400).json(apiError("friend-not-found"));
         }
 
         let acceptedAll = true;

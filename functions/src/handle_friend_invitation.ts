@@ -115,17 +115,29 @@ export const handleFriendInvitation = functions
         if (inviteData.sender === friendId) {
           return response
             .status(400)
-            .json(apiError("Cannot invite self to schedule"));
+            .json(apiError("accepting-self-schedule"));
         }
 
         const friendEmail = (await auth.getUser(friendId)).email;
         if (!friendEmail) {
           return response
             .status(400)
-            .json(apiError("Invalid friend email from DB"));
+            .json(apiError("friend-not-found"));
         }
 
+        let acceptedAll = true;
+
         inviteData.versions.forEach((idx) => {
+          if (
+            !senderSchedule.terms[inviteData.term].versions[idx].friends[
+              friendId
+            ] ||
+            senderSchedule.terms[inviteData.term].versions[idx].friends[
+              friendId
+            ].status !== "Accepted"
+          ) {
+            acceptedAll = false;
+          }
           senderSchedule.terms[inviteData.term].versions[idx].friends[
             friendId
           ] = {
@@ -133,6 +145,10 @@ export const handleFriendInvitation = functions
             status: "Accepted",
           };
         });
+
+        if (acceptedAll) {
+          return response.status(400).json(apiError("already-accepted-all"));
+        }
 
         let friendRecord: FriendData | undefined = (
           await friendsCollection.doc(friendId).get()
@@ -176,9 +192,10 @@ export const handleFriendInvitation = functions
         }
         return response.status(202).send({
           email: senderEmail,
+          term: inviteData.term,
         });
       } catch (err) {
-        return response.status(400).json(apiError("Error accepting invite"));
+        return response.status(400).json(apiError("unkown-error"));
       }
     });
   });

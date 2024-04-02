@@ -27,8 +27,9 @@ type ScheduleVersionPayload = {
 
 type SchedulePayload = Record<string, ScheduleVersionPayload>;
 
-export const fetchFriendSchedules = functions.https.onRequest(
-  async (request, response) => {
+export const fetchFriendSchedules = functions
+  .region("us-east1")
+  .https.onRequest(async (request, response) => {
     corsHandler(request, response, async () => {
       try {
         // This request should be made with content type is application/x-www-form-urlencoded.
@@ -149,5 +150,4 @@ export const fetchFriendSchedules = functions.https.onRequest(
 
       return response.status(200).json(friendSchedulePayload);
     });
-  }
-);
+  });

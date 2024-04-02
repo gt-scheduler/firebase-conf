@@ -60,17 +60,21 @@ export default async function sendInvitation({
       <h1 style="color: white; font-size: 24px">Invitation to View Schedule</h1>
       <p style="color: white">Hello,</p>
       <p style="color: white">
-        You have been invited to a GT schedule by
-        <a
-          href="mailto:${senderEmail}"
-          style="color: #1456d3; text-decoration: underline"
-          ><b>${senderEmail}</b></a
-        >
+        You have been invited by
+        <span style="text-decoration: underline">
+          <a
+            href="mailto:${senderEmail}"
+            style="color: white; text-decoration: none"
+            class="sender-email"
+          >
+            <b>${senderEmail}</b></a
+          >
+        </span>
         to import the following schedules: <b>${versionNames.join(", ")}</b> for
-        the ${semester}. Accepting this invite allows you to compare this schedule
-        to others in you Shared Schedule panel when turned on. You can always
-        remove this schedule from your view in the site after importing it if you
-        chose to do so.
+        the ${semester} semester. Accepting this invite allows you to compare this
+        schedule to others in you Shared Schedule panel when turned on. You can
+        always remove this schedule from your view in the site after importing it
+        if you chose to do so.
       </p>
       <a
         href="${inviteUrl}"
@@ -115,6 +119,7 @@ export default async function sendInvitation({
       </div>
     </div>
   </div>
+
 
   `;
   await sendEmail(friendEmail, subject, text, html);

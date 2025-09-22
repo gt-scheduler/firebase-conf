@@ -1,6 +1,6 @@
 import admin from "./firebase";
 import * as functions from "firebase-functions";
-import * as cors from "cors";
+import cors from "cors";
 import { apiError } from "./api";
 import {
   AnyScheduleVersion,

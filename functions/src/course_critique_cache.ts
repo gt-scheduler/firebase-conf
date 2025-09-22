@@ -5,7 +5,7 @@ import * as zlib from "zlib";
 import * as util from "util";
 import { Response } from "express";
 import admin from "./firebase";
-import * as cors from "cors";
+import cors from "cors";
 import { apiError } from "./api";
 
 const UPSTREAM_COURSE_DATA_URL =

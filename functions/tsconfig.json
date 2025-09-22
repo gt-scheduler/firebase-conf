@@ -6,9 +6,11 @@
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "es2017",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "compileOnSave": true,
-  "include": ["src"],
-  "exclude": ["types/request.d.ts"] 
+  "include": ["src", "types"]
 }

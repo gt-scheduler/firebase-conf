@@ -127,7 +127,7 @@ export const createFriendInvitation = functions
         try {
           inviteRef = invitesCollection.doc();
           inviteId = inviteRef.id;
-          
+
           // create new invite record
           const record: FriendEmailInviteData = {
             sender: senderId,
@@ -163,14 +163,22 @@ export const createFriendInvitation = functions
           });
           await schedulesCollection.doc(senderId).set(senderData);
         } catch (err) {
-          functions.logger.error("Error sending invite email or saving record", err);
+          functions.logger.error(
+            "Error sending invite email or saving record",
+            err
+          );
 
           if (inviteRef) {
             try {
               await inviteRef.delete();
-              functions.logger.warn("Rolled back invite document after failure");
+              functions.logger.warn(
+                "Rolled back invite document after failure"
+              );
             } catch (rollbackErr) {
-              functions.logger.error("Failed to roll back invite document", rollbackErr);
+              functions.logger.error(
+                "Failed to roll back invite document",
+                rollbackErr
+              );
             }
           }
 

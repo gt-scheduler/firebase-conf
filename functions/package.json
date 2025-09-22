@@ -27,6 +27,8 @@
     "date-and-time": "^2.0",
     "firebase-admin": "^9.8",
     "firebase-functions": "^3.14",
+    "http": "^0.0.1-security",
+    "juno-sdk": "^0.0.6",
     "node-fetch": "^2",
     "nodemailer": "^6.9.1",
     "yarn": "^1.22.19"

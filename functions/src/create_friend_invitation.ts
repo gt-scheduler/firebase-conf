@@ -2,6 +2,7 @@ import admin from "./firebase";
 import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
+import juno from "juno-sdk";
 
 import {
   AnyScheduleData,
@@ -69,7 +70,7 @@ export const createFriendInvitation = functions
         if (senderEmail === friendEmail) {
           return response
             .status(400)
-            .json(apiError("Cannot invite self to schedule"));
+            .json(apiError("Cannot invite self to schedule HAHAHAHAH"));
         }
 
         // Get Sender UID from the decoded token
@@ -153,6 +154,11 @@ export const createFriendInvitation = functions
             .json(apiError("Error saving new invite record"));
         }
 
+        juno.init({
+          apiKey: process.env.JUNO_API_KEY!,
+          baseURL: process.env.JUNO_BASE_URL!,
+        });
+
         // use nodemailer to send new invite
         try {
           await sendInvitation({
@@ -164,6 +170,12 @@ export const createFriendInvitation = functions
             url: redirectURL.replace(/\/+$/, ""),
           });
         } catch {
+          if (inviteId) {
+            // rollback orphaned invite
+            functions.logger.info("Rolling back orphaned invite", inviteId);
+            await invitesCollection.doc(inviteId).delete();
+          }
+
           return response
             .status(400)
             .json(apiError("Error sending invite email"));

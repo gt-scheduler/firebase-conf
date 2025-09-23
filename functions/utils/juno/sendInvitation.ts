@@ -146,7 +146,7 @@ async function sendEmail(
       bcc: [],
       replyToList: [],
       sender: {
-        email: "gtscheduler.sendgrid@gmail.com",
+        email: process.env.JUNO_EMAIL,
         name: "GT Scheduler",
       },
       subject: subject,

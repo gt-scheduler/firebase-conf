@@ -4,11 +4,12 @@ import fetch from "node-fetch";
 import { parseStringPromise } from "xml2js";
 import { apiError } from "./api";
 import * as crypto from "crypto";
+import { URL } from "url";
 
 // GT SSO CAS configuration
 const CAS_BASE = "https://login.gatech.edu/cas";
-const CAS_LOGIN = `${CAS_BASE}/login`;
-const CAS_VALIDATE = `${CAS_BASE}/serviceValidate`;
+const CAS_LOGIN = new URL("/login", CAS_BASE).toString();
+const CAS_VALIDATE = new URL("/serviceValidate", CAS_BASE).toString();
 
 interface CasResponse {
   serviceResponse: {
@@ -61,16 +62,6 @@ async function getAuthenticatedUser(
 const ssoLogin = functions
   .region("us-east1")
   .https.onRequest(async (req, res) => {
-    // Set CORS headers
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-
     if (req.method !== "GET") {
       res.status(405).json(apiError("Method not allowed"));
       return;
@@ -100,7 +91,7 @@ const ssoLogin = functions
 
       res.redirect(casLoginUrl.toString());
     } catch (error) {
-      console.error("SSO Login error:", error);
+      functions.logger.error("SSO Login error:", error);
       if (
         error instanceof Error &&
         error.message === "User authentication required"
@@ -121,16 +112,6 @@ const ssoLogin = functions
 const ssoCallback = functions
   .region("us-east1")
   .https.onRequest(async (req, res) => {
-    // Set CORS headers
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
-
     if (req.method !== "GET") {
       res.status(405).json(apiError("Method not allowed"));
       return;
@@ -187,7 +168,7 @@ const ssoCallback = functions
       if (!success) {
         const error =
           doc?.serviceResponse?.authenticationFailure?._ || "GT SSO fails";
-        console.error("CAS authentication failed:", error);
+        functions.logger.error("CAS authentication failed:", error);
         res.status(401).json(apiError(error));
         return;
       }
@@ -214,7 +195,7 @@ const ssoCallback = functions
         gt_username: gtUsername,
       });
     } catch (error) {
-      console.error("SSO Callback error:", error);
+      functions.logger.error("SSO Callback error:", error);
       if (
         error instanceof Error &&
         error.message === "User authentication required"
@@ -231,11 +212,12 @@ const ssoCallback = functions
 export const connectWithGtSso = functions
   .region("us-east1")
   .https.onRequest(async (req, res) => {
-    const path = req.path;
+    const url = new URL(req.url, `${req.protocol}://${req.get("host")}`);
+    const pathname = url.pathname;
 
-    if (path.endsWith("/sso/login")) {
+    if (pathname.endsWith("/sso/login")) {
       return ssoLogin(req, res);
-    } else if (path.endsWith("/callback")) {
+    } else if (pathname.endsWith("/callback")) {
       return ssoCallback(req, res);
     } else {
       res.status(404).json(apiError("Endpoint not found"));

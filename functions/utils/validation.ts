@@ -33,7 +33,7 @@ export function validateMetricData(data: unknown): boolean {
       }
 
       default: {
-        break;
+        return false;
       }
     }
   }

@@ -13,10 +13,11 @@ export function validateMetricData(data: unknown): boolean {
     if (typeof target.reference !== "string") return false;
 
     switch (target.type) {
-      case TargetType.COURSE:
+      case TargetType.COURSE: {
         // ABCD 1234
         if (!/^[A-Z]+ \d{4}$/.test(target.reference)) return false;
         break;
+      }
 
       case TargetType.PROFESSOR: {
         // FirstName LastName
@@ -25,10 +26,15 @@ export function validateMetricData(data: unknown): boolean {
         break;
       }
 
-      case TargetType.SECTION:
+      case TargetType.SECTION: {
         // ABC01
         if (!/^[A-Z]+\d+$/.test(target.reference)) return false;
         break;
+      }
+
+      default: {
+        break;
+      }
     }
   }
 

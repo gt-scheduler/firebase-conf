@@ -43,8 +43,7 @@ export const submitMetrics = functions
           return response.status(401).json(apiError("IDToken not provided"));
         }
 
-        const validationError = validateMetricData(request.body);
-        if (validationError) {
+        if (!validateMetricData(request.body)) {
           return response.status(400).json(apiError("Validation failed"));
         }
 

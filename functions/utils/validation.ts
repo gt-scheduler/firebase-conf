@@ -14,8 +14,8 @@ export function validateMetricData(data: unknown): boolean {
 
     switch (target.type) {
       case TargetType.COURSE:
-        // ABC1234
-        if (!/^[A-Z]+\d{4}$/.test(target.reference)) return false;
+        // ABCD 1234
+        if (!/^[A-Z]+ \d{4}$/.test(target.reference)) return false;
         break;
 
       case TargetType.PROFESSOR: {

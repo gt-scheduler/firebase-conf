@@ -33,7 +33,7 @@ export const submitMetrics = functions
 
         const {
           IDToken,
-          metric_name,
+          metricName,
           targets,
           values,
           semester,
@@ -63,10 +63,10 @@ export const submitMetrics = functions
           await firestore.runTransaction(async (transaction) => {
             const existingQuery = metricsCollection
               .where("author", "==", userId)
-              .where("metric_name", "==", metric_name);
+              .where("metricName", "==", metricName);
 
             const existingDocs = await transaction.get(existingQuery);
-            // Either 1 or none since metric is unique based on author and metric_name
+            // Either 1 or none since metric is unique based on author and metricName
             const existingDoc = existingDocs.docs[0] || null;
 
             // This is more accurate than Date.now()
@@ -113,7 +113,7 @@ export const submitMetrics = functions
               transaction.update(existingDoc.ref, updateData);
             } else {
               const newDoc: Omit<MetricData, "id"> = {
-                metric_name,
+                metricName: metricName,
                 targets,
                 author: userId,
                 values,

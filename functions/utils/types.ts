@@ -145,7 +145,7 @@ export type ScheduleDeletionRequest = {
 // MetricNames are temporary
 export enum MetricName {
   DIFFICULTY = "difficulty",
-  WOULD_RECOMMEND = "would_recommend",
+  RECOMMENDED = "recommended",
 }
 
 export enum TargetType {
@@ -161,18 +161,18 @@ export interface MetricTarget {
 
 export interface MetricData {
   id: string;
-  metric_name: MetricName;
+  metricName: MetricName;
   targets: MetricTarget[];
   author: string;
-  values: any[];
+  values: number[];
   semester?: number;
   datetime: Timestamp;
 }
 
 export type SubmitMetricsRequestData = {
   IDToken: string;
-  metric_name: MetricName;
+  metricName: MetricName;
   targets: MetricTarget[];
-  values: any[];
+  values: number[];
   semester?: number;
 };

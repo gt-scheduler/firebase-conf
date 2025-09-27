@@ -138,3 +138,41 @@ export type ScheduleDeletionRequest = {
    */
   owner: boolean;
 };
+
+// Metrics system types
+// ====================
+
+// MetricNames are temporary
+export enum MetricName {
+  DIFFICULTY = "difficulty",
+  WOULD_RECOMMEND = "would_recommend",
+}
+
+export enum TargetType {
+  PROFESSOR = "professor",
+  COURSE = "course",
+  SECTION = "section",
+}
+
+export interface MetricTarget {
+  type: TargetType;
+  reference: string;
+}
+
+export interface MetricData {
+  id: string;
+  metric_name: MetricName;
+  targets: MetricTarget[];
+  author: string;
+  values: any[];
+  semester?: number;
+  datetime: Timestamp;
+}
+
+export type SubmitMetricsRequestData = {
+  IDToken: string;
+  metric_name: MetricName;
+  targets: MetricTarget[];
+  values: any[];
+  semester?: number;
+};

@@ -1,14 +1,14 @@
-import { MetricName, TargetType } from "./types";
+import { MetricName, TargetType, MetricData } from "./types";
 
-export function validateMetricData(data: any): boolean {
-  if (!data || typeof data !== "object") return false;
+export function validateMetricData(data: unknown): boolean {
+  if (typeof data !== "object" || data === null) return false;
+  const d = data as MetricData;
 
-  if (!Object.values(MetricName).includes(data.metric_name)) return false;
+  if (!Object.values(MetricName).includes(d.metricName)) return false;
+  if (!Array.isArray(d.targets)) return false;
 
-  if (!Array.isArray(data.targets)) return false;
-
-  for (const target of data.targets) {
-    if (!target || typeof target !== "object") return false;
+  for (const target of d.targets) {
+    if (typeof target !== "object" || target === null) return false;
     if (!Object.values(TargetType).includes(target.type)) return false;
     if (typeof target.reference !== "string") return false;
 
@@ -18,11 +18,12 @@ export function validateMetricData(data: any): boolean {
         if (!/^[A-Z]+\d{4}$/.test(target.reference)) return false;
         break;
 
-      case TargetType.PROFESSOR:
+      case TargetType.PROFESSOR: {
         // FirstName LastName
         const nameParts = target.reference.split(" ");
         if (nameParts.length !== 2) return false;
         break;
+      }
 
       case TargetType.SECTION:
         // ABC01
@@ -32,9 +33,9 @@ export function validateMetricData(data: any): boolean {
   }
 
   // YYYYMM
-  if (data.semester !== undefined) {
-    if (typeof data.semester !== "number") return false;
-    if (!/^\d{6}$/.test(String(data.semester))) return false;
+  if (d.semester !== undefined) {
+    if (typeof d.semester !== "number") return false;
+    if (!/^\d{6}$/.test(String(d.semester))) return false;
   }
 
   return true;

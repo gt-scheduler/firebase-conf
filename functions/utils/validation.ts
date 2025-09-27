@@ -1,8 +1,8 @@
-import { MetricName, TargetType, MetricData } from "./types";
+import { MetricName, TargetType, SubmitMetricsRequestData } from "./types";
 
 export function validateMetricData(data: unknown): boolean {
   if (typeof data !== "object" || data === null) return false;
-  const d = data as MetricData;
+  const d = data as SubmitMetricsRequestData;
 
   if (!Object.values(MetricName).includes(d.metricName)) return false;
   if (!Array.isArray(d.targets)) return false;

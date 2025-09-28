@@ -12,7 +12,8 @@ const CAS_BASE = "https://login.gatech.edu/";
 const CAS_LOGIN = new URL("/login", CAS_BASE).toString();
 const CAS_VALIDATE = new URL("/serviceValidate", CAS_BASE).toString();
 // TODO: make env var when we get GT SSO access
-const CLOUD_FUNCTION_BASE = "http://localhost:5001/gt-scheduler-web-dev/us-east1/connectWithGtSso"
+const CLOUD_FUNCTION_BASE =
+  "http://localhost:5001/gt-scheduler-web-dev/us-east1/connectWithGtSso";
 
 interface CasResponse {
   serviceResponse: {
@@ -66,49 +67,49 @@ async function getAuthenticatedUser(
  */
 const ssoLogin = functions
   .region("us-east1")
-.https.onRequest(async (req, res) => {
-  corsHandler(req, res, async () => {
-    if (req.method !== "GET") {
-      res.status(405).json(apiError("Method not allowed"));
-      return;
-    }
-
-    try {
-      // Verify Firebase authentication
-      const { uid } = await getAuthenticatedUser(req);
-
-      // Create one-time token bound to this user
-      const token = crypto.randomBytes(16).toString("hex");
-      await ssoStatesCollection.doc(token).set({
-        uid,
-        expiresAt: admin.firestore.Timestamp.fromMillis(
-          Date.now() + 5 * 60 * 1000
-        ),
-      });
-
-      // Generate callback URL with token for verification
-      const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
-
-      // Redirect to GT CAS login
-      const casLoginUrl = new URL(CAS_LOGIN);
-      casLoginUrl.searchParams.set("service", serviceUrl);
-
-      res.redirect(casLoginUrl.toString());
-    } catch (error) {
-      functions.logger.error("SSO Login error:", error);
-      if (
-        error instanceof Error &&
-          error.message === "User authentication required"
-      ) {
-        res
-          .status(401)
-          .json(apiError("User authentication required to /sso/login"));
-      } else {
-        res.status(500).json(apiError("Internal server error"));
+  .https.onRequest(async (req, res) => {
+    corsHandler(req, res, async () => {
+      if (req.method !== "GET") {
+        res.status(405).json(apiError("Method not allowed"));
+        return;
       }
-    }
+
+      try {
+        // Verify Firebase authentication
+        const { uid } = await getAuthenticatedUser(req);
+
+        // Create one-time token bound to this user
+        const token = crypto.randomBytes(16).toString("hex");
+        await ssoStatesCollection.doc(token).set({
+          uid,
+          expiresAt: admin.firestore.Timestamp.fromMillis(
+            Date.now() + 5 * 60 * 1000
+          ),
+        });
+
+        // Generate callback URL with token for verification
+        const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
+
+        // Redirect to GT CAS login
+        const casLoginUrl = new URL(CAS_LOGIN);
+        casLoginUrl.searchParams.set("service", serviceUrl);
+
+        res.redirect(casLoginUrl.toString());
+      } catch (error) {
+        functions.logger.error("SSO Login error:", error);
+        if (
+          error instanceof Error &&
+          error.message === "User authentication required"
+        ) {
+          res
+            .status(401)
+            .json(apiError("User authentication required to /sso/login"));
+        } else {
+          res.status(500).json(apiError("Internal server error"));
+        }
+      }
+    });
   });
-});
 
 /**
  * GT SSO Callback endpoint - validates ticket and adds claims to user
@@ -117,101 +118,101 @@ const ssoLogin = functions
 const ssoCallback = functions
   .region("us-east1")
   .https.onRequest(async (req, res) => {
-  corsHandler(req, res, async () => {
-    if (req.method !== "GET") {
-      res.status(405).json(apiError("Method not allowed"));
-      return;
-    }
-
-    try {
-      const ticket = req.query.ticket as string;
-      const token = req.query.token as string;
-
-      if (!ticket) {
-        res.status(400).json(apiError("Missing ticket"));
+    corsHandler(req, res, async () => {
+      if (req.method !== "GET") {
+        res.status(405).json(apiError("Method not allowed"));
         return;
       }
 
-      if (!token) {
-        res.status(400).json(apiError("Missing token"));
-        return;
-      }
+      try {
+        const ticket = req.query.ticket as string;
+        const token = req.query.token as string;
 
-      // Look up and consume one-time token to identify initiating user
-      const stateRef = ssoStatesCollection.doc(token);
-      const stateSnap = await stateRef.get();
-      if (!stateSnap.exists) {
-        res.status(401).json(apiError("Invalid token"));
-        return;
-      }
-      const stateData = stateSnap.data() as SsoState | undefined;
-      await stateRef.delete();
-      const uid = stateData?.uid;
-      const expiresAtMillis = stateData?.expiresAt?.toMillis?.() ?? 0;
-      if (!uid || Date.now() > expiresAtMillis) {
-        res.status(401).json(apiError("Invalid or expired token"));
-        return;
-      }
+        if (!ticket) {
+          res.status(400).json(apiError("Missing ticket"));
+          return;
+        }
 
-      // Validate ticket with GT CAS
-      const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
-      const validateUrl = new URL(CAS_VALIDATE);
-      validateUrl.searchParams.set("service", serviceUrl);
-      validateUrl.searchParams.set("ticket", ticket);
+        if (!token) {
+          res.status(400).json(apiError("Missing token"));
+          return;
+        }
 
-      const response = await fetch(validateUrl.toString());
-      const xml = await response.text();
+        // Look up and consume one-time token to identify initiating user
+        const stateRef = ssoStatesCollection.doc(token);
+        const stateSnap = await stateRef.get();
+        if (!stateSnap.exists) {
+          res.status(401).json(apiError("Invalid token"));
+          return;
+        }
+        const stateData = stateSnap.data() as SsoState | undefined;
+        await stateRef.delete();
+        const uid = stateData?.uid;
+        const expiresAtMillis = stateData?.expiresAt?.toMillis?.() ?? 0;
+        if (!uid || Date.now() > expiresAtMillis) {
+          res.status(401).json(apiError("Invalid or expired token"));
+          return;
+        }
 
-      // Parse CAS response
-      const doc = (await parseStringPromise(xml, {
-        explicitArray: false,
-        tagNameProcessors: [(name: string) => name.replace(/^cas:/, "")],
-      })) as CasResponse;
+        // Validate ticket with GT CAS
+        const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
+        const validateUrl = new URL(CAS_VALIDATE);
+        validateUrl.searchParams.set("service", serviceUrl);
+        validateUrl.searchParams.set("ticket", ticket);
 
-      const success = doc?.serviceResponse?.authenticationSuccess;
-      if (!success) {
-        const error =
-          doc?.serviceResponse?.authenticationFailure?._ || "GT SSO fails";
-        functions.logger.error("CAS authentication failed:", error);
-        res.status(401).json(apiError(error));
-        return;
-      }
+        const response = await fetch(validateUrl.toString());
+        const xml = await response.text();
 
-      const gtUsername = success.user;
-      if (!gtUsername) {
-        res.status(400).json(apiError("No username returned from GT SSO"));
-        return;
-      }
+        // Parse CAS response
+        const doc = (await parseStringPromise(xml, {
+          explicitArray: false,
+          tagNameProcessors: [(name: string) => name.replace(/^cas:/, "")],
+        })) as CasResponse;
 
-      // Merge custom claims and add gt_username to Firebase user
-      const existingUser = await admin.auth().getUser(uid);
-      const existingClaims = (existingUser.customClaims || {}) as {
-        [key: string]: unknown;
-      };
-      await admin.auth().setCustomUserClaims(uid, {
-        ...existingClaims,
-        gt_username: gtUsername,
-      });
+        const success = doc?.serviceResponse?.authenticationSuccess;
+        if (!success) {
+          const error =
+            doc?.serviceResponse?.authenticationFailure?._ || "GT SSO fails";
+          functions.logger.error("CAS authentication failed:", error);
+          res.status(401).json(apiError(error));
+          return;
+        }
 
-      res.json({
-        ok: true,
-        message: "Successfully connected with GT SSO",
-        gt_username: gtUsername,
-      });
-    } catch (error) {
-      functions.logger.error("SSO Callback error:", error);
-      if (
-        error instanceof Error &&
+        const gtUsername = success.user;
+        if (!gtUsername) {
+          res.status(400).json(apiError("No username returned from GT SSO"));
+          return;
+        }
+
+        // Merge custom claims and add gt_username to Firebase user
+        const existingUser = await admin.auth().getUser(uid);
+        const existingClaims = (existingUser.customClaims || {}) as {
+          [key: string]: unknown;
+        };
+        await admin.auth().setCustomUserClaims(uid, {
+          ...existingClaims,
+          gt_username: gtUsername,
+        });
+
+        res.json({
+          ok: true,
+          message: "Successfully connected with GT SSO",
+          gt_username: gtUsername,
+        });
+      } catch (error) {
+        functions.logger.error("SSO Callback error:", error);
+        if (
+          error instanceof Error &&
           error.message === "User authentication required"
-      ) {
-        res
-          .status(401)
-          .json(apiError("User authentication required to /callback"));
-      } else {
-        res.status(500).json(apiError("Internal server error"));
+        ) {
+          res
+            .status(401)
+            .json(apiError("User authentication required to /callback"));
+        } else {
+          res.status(500).json(apiError("Internal server error"));
+        }
       }
-    }
-  });
+    });
   });
 
 export const connectWithGtSso = functions

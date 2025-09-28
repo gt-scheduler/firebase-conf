@@ -65,59 +65,68 @@ export const submitMetrics = functions
               .where("metricName", "==", metricName);
 
             const existingDocs = await transaction.get(existingQuery);
-            // Either 1 or none since metric is unique based on author and metricName
-            const existingDoc = existingDocs.docs[0] || null;
 
             // This is more accurate than Date.now()
             const currTime = admin.firestore.Timestamp.now();
 
-            if (existingDoc) {
-              const existingData = existingDoc.data();
-              const existingTargets = existingData.targets;
+            let matchedDoc: FirebaseFirestore.QueryDocumentSnapshot<MetricData> | null =
+              null;
 
-              const mergedTargets = [...existingTargets];
-              let hasOverlap = false;
+            for (const doc of existingDocs.docs) {
+              const data = doc.data();
+              const existingTargets = data.targets;
 
-              targets.forEach((target) => {
-                const targetExists = existingTargets.some(
-                  (existingTarget) =>
-                    existingTarget.type === target.type &&
-                    existingTarget.reference === target.reference
-                );
+              // Overlap means for every target we write, it exists in the doc
+              const overlap = targets.every((t) =>
+                existingTargets.some(
+                  (et) => et.type === t.type && et.reference === t.reference
+                )
+              );
 
-                if (targetExists) {
-                  hasOverlap = true;
-                } else {
-                  mergedTargets.push(target);
-                }
-              });
+              // Conflict means at least one target is in existing doc but not all
+              const conflict =
+                targets.some((t) =>
+                  existingTargets.some(
+                    (et) => et.type === t.type && et.reference === t.reference
+                  )
+                ) && !overlap;
 
-              if (hasOverlap) {
-                const rateLimitThreshold =
-                  currTime.toMillis() - RATE_LIMIT_SECONDS * 1000;
-                const lastUpdate = existingData.datetime.toMillis();
+              if (overlap && !conflict) {
+                matchedDoc = doc;
+                break;
+              }
+            }
 
-                if (lastUpdate > rateLimitThreshold) {
-                  throw new Error("Rate limit");
-                }
+            // Overlap but no conflict results in a merge
+            if (matchedDoc) {
+              const existingData = matchedDoc.data();
+
+              // Rate limiting checked only on merge
+              const lastUpdate = existingData.datetime.toMillis();
+              const rateLimitThreshold =
+                currTime.toMillis() - RATE_LIMIT_SECONDS * 1000;
+              if (lastUpdate > rateLimitThreshold) {
+                throw new Error("Rate limit");
               }
 
               const updateData: Partial<MetricData> = {
-                targets: mergedTargets,
+                // Keep the same targets since |existing targets| >= |new targets|
+                targets: existingData.targets,
                 values,
                 datetime: currTime,
-                semester: semester,
+                semester,
               };
 
-              transaction.update(existingDoc.ref, updateData);
+              transaction.update(matchedDoc.ref, updateData);
             } else {
+              // All other cases, create a new doc
               const newDoc: Omit<MetricData, "id"> = {
-                metricName: metricName,
+                metricName,
                 targets,
                 author: userId,
                 values,
                 datetime: currTime,
-                semester: semester,
+                semester,
               };
 
               transaction.create(metricsCollection.doc(), newDoc);

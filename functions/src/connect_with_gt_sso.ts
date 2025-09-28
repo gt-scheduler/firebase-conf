@@ -5,11 +5,14 @@ import { parseStringPromise } from "xml2js";
 import { apiError } from "./api";
 import * as crypto from "crypto";
 import { URL } from "url";
+import * as cors from "cors";
 
 // GT SSO CAS configuration
-const CAS_BASE = "https://login.gatech.edu/cas";
+const CAS_BASE = "https://login.gatech.edu/";
 const CAS_LOGIN = new URL("/login", CAS_BASE).toString();
 const CAS_VALIDATE = new URL("/serviceValidate", CAS_BASE).toString();
+// TODO: make env var when we get GT SSO access
+const CLOUD_FUNCTION_BASE = "http://localhost:5001/gt-scheduler-web-dev/us-east1/connectWithGtSso"
 
 interface CasResponse {
   serviceResponse: {
@@ -36,6 +39,8 @@ const ssoStatesCollection = firestore.collection(
   "sso-states"
 ) as FirebaseFirestore.CollectionReference<SsoState>;
 
+const corsHandler = cors({ origin: true });
+
 /**
  * Extracts and verifies Firebase authentication from request
  * @param {functions.Request} req - Firebase Functions request object
@@ -61,7 +66,8 @@ async function getAuthenticatedUser(
  */
 const ssoLogin = functions
   .region("us-east1")
-  .https.onRequest(async (req, res) => {
+.https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
     if (req.method !== "GET") {
       res.status(405).json(apiError("Method not allowed"));
       return;
@@ -81,9 +87,7 @@ const ssoLogin = functions
       });
 
       // Generate callback URL with token for verification
-      const serviceUrl = `${req.protocol}://${req.get(
-        "host"
-      )}/connectWithGtSso/callback?token=${token}`;
+      const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
 
       // Redirect to GT CAS login
       const casLoginUrl = new URL(CAS_LOGIN);
@@ -94,7 +98,7 @@ const ssoLogin = functions
       functions.logger.error("SSO Login error:", error);
       if (
         error instanceof Error &&
-        error.message === "User authentication required"
+          error.message === "User authentication required"
       ) {
         res
           .status(401)
@@ -104,6 +108,7 @@ const ssoLogin = functions
       }
     }
   });
+});
 
 /**
  * GT SSO Callback endpoint - validates ticket and adds claims to user
@@ -112,6 +117,7 @@ const ssoLogin = functions
 const ssoCallback = functions
   .region("us-east1")
   .https.onRequest(async (req, res) => {
+  corsHandler(req, res, async () => {
     if (req.method !== "GET") {
       res.status(405).json(apiError("Method not allowed"));
       return;
@@ -148,9 +154,7 @@ const ssoCallback = functions
       }
 
       // Validate ticket with GT CAS
-      const serviceUrl = `${req.protocol}://${req.get(
-        "host"
-      )}/connectWithGtSso/callback?token=${token}`;
+      const serviceUrl = `${CLOUD_FUNCTION_BASE}/callback?token=${token}`;
       const validateUrl = new URL(CAS_VALIDATE);
       validateUrl.searchParams.set("service", serviceUrl);
       validateUrl.searchParams.set("ticket", ticket);
@@ -198,7 +202,7 @@ const ssoCallback = functions
       functions.logger.error("SSO Callback error:", error);
       if (
         error instanceof Error &&
-        error.message === "User authentication required"
+          error.message === "User authentication required"
       ) {
         res
           .status(401)
@@ -207,6 +211,7 @@ const ssoCallback = functions
         res.status(500).json(apiError("Internal server error"));
       }
     }
+  });
   });
 
 export const connectWithGtSso = functions

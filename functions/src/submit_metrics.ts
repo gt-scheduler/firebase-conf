@@ -83,13 +83,14 @@ export const submitMetrics = functions
                 )
               );
 
-              // Conflict means at least one target is in existing doc but not all
+              // Conflict means at least one target is in existing doc but NOT all
               const conflict =
+                !overlap &&
                 targets.some((t) =>
                   existingTargets.some(
                     (et) => et.type === t.type && et.reference === t.reference
                   )
-                ) && !overlap;
+                );
 
               if (overlap && !conflict) {
                 matchedDoc = doc;

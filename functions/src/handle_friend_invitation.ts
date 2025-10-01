@@ -85,10 +85,10 @@ export const handleFriendInvitation = functions
         Object.keys(senderSchedule.terms).forEach((t) => {
           Object.keys(senderSchedule.terms[t].versions).forEach((v) => {
             if (!senderSchedule.terms[t].versions[v].friends) {
-              senderSchedule.terms[t].versions[v].friends = {}
+              senderSchedule.terms[t].versions[v].friends = {};
             }
-          })
-        })
+          });
+        });
 
         // Check if link hasn't expired by calculating the difference between the current time and the time the link was created
         const defaultValidDuration = 7 * 24 * 60 * 60;
@@ -199,7 +199,7 @@ export const handleFriendInvitation = functions
           term: inviteData.term,
         });
       } catch (err) {
-        console.log(err)
+        functions.logger.log(err);
         return response.status(400).json(apiError("unkown-error"));
       }
     });

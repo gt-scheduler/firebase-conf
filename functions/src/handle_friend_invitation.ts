@@ -199,7 +199,7 @@ export const handleFriendInvitation = functions
           term: inviteData.term,
         });
       } catch (err) {
-        console.log(err);
+        functions.logger.log(err);
         return response.status(400).json(apiError("unkown-error"));
       }
     });

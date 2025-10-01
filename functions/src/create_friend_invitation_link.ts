@@ -121,7 +121,7 @@ export const createFriendInvitationLink = functions
           .status(200)
           .json({ link: redirectURL + `#/invite/${inviteId}` });
       } catch (err) {
-        console.error(err);
+        functions.logger.error(err);
         return response.status(400).json(apiError("Error creating invite"));
       }
     });

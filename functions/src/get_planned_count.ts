@@ -3,10 +3,7 @@ import * as functions from "firebase-functions";
 import * as cors from "cors";
 import { apiError } from "./api";
 
-import {
-  Version3Schedule,
-  Version3ScheduleData,
-} from "../utils/types";
+import { Version3Schedule, Version3ScheduleData } from "../utils/types";
 
 const firestore = admin.firestore();
 
@@ -19,20 +16,16 @@ export const getPlannedCounts = functions
       try {
         const term = request.query["term"];
         if (term == null || term.length === 0) {
-          response
-            .status(400)
-            .json(apiError("Invalid request"));
+          response.status(400).json(apiError("Invalid request"));
           return;
         } else if (typeof term !== "string") {
-          response
-            .status(400)
-            .json(apiError("Invalid request"));
+          response.status(400).json(apiError("Invalid request"));
           return;
         }
-        
+
         const courseCounts: Record<string, number> = {};
         const sectionCounts: Record<string, number> = {};
-        
+
         const schedules = await firestore.collection("schedules").get();
         for (const user of schedules.docs) {
           const data = user.data() as Version3ScheduleData;

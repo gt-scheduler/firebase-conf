@@ -10,7 +10,7 @@ import {
   FriendEmailInviteData,
   Version3ScheduleData,
 } from "../utils/types";
-import sendInvitation from "../utils/nodemailer/sendInvitation";
+import sendInvitation from "../utils/juno/sendInvitation";
 
 const firestore = admin.firestore();
 const schedulesCollection = firestore.collection(
@@ -122,20 +122,36 @@ export const createFriendInvitation = functions
         });
         await batch.commit();
 
-        // create new invite record in db
-        const record: FriendEmailInviteData = {
-          sender: senderId,
-          term,
-          versions: sortedVersions,
-          created: admin.firestore.Timestamp.fromDate(new Date()),
-          link: false,
-          validFor: 7 * 24 * 60 * 60,
-          friend: friendId,
-        };
+        let inviteRef: FirebaseFirestore.DocumentReference | null = null;
         let inviteId;
         try {
-          // Add the invite data to the schedule of the sender
-          const addRes = await invitesCollection.add(record);
+          inviteRef = invitesCollection.doc();
+          inviteId = inviteRef.id;
+
+          // create new invite record
+          const record: FriendEmailInviteData = {
+            sender: senderId,
+            term,
+            versions: sortedVersions,
+            created: admin.firestore.Timestamp.fromDate(new Date()),
+            link: false,
+            validFor: 7 * 24 * 60 * 60,
+            friend: friendId,
+          };
+
+          // Use juno to send invite email
+          await sendInvitation({
+            inviteId,
+            senderEmail,
+            friendEmail,
+            term,
+            versionNames,
+            url: redirectURL.replace(/\/+$/, ""),
+          });
+
+          // Save the invite record only if the email was sent successfully
+          await inviteRef.set(record);
+
           sortedVersions.forEach((v) => {
             if (!senderData.terms[term].versions[v].friends) {
               senderData.terms[term].versions[v].friends = {};
@@ -145,25 +161,27 @@ export const createFriendInvitation = functions
               status: "Pending",
             };
           });
-          schedulesCollection.doc(senderId).set(senderData);
-          inviteId = addRes.id;
-        } catch {
-          return response
-            .status(400)
-            .json(apiError("Error saving new invite record"));
-        }
+          await schedulesCollection.doc(senderId).set(senderData);
+        } catch (err) {
+          functions.logger.error(
+            "Error sending invite email or saving record",
+            err
+          );
 
-        // use nodemailer to send new invite
-        try {
-          await sendInvitation({
-            inviteId,
-            senderEmail,
-            friendEmail,
-            term,
-            versionNames,
-            url: redirectURL.replace(/\/+$/, ""),
-          });
-        } catch {
+          if (inviteRef) {
+            try {
+              await inviteRef.delete();
+              functions.logger.warn(
+                "Rolled back invite document after failure"
+              );
+            } catch (rollbackErr) {
+              functions.logger.error(
+                "Failed to roll back invite document",
+                rollbackErr
+              );
+            }
+          }
+
           return response
             .status(400)
             .json(apiError("Error sending invite email"));
@@ -171,7 +189,7 @@ export const createFriendInvitation = functions
 
         return response.status(200).json({ inviteId });
       } catch (err) {
-        console.error(err);
+        functions.logger.error(err);
         return response.status(400).json(apiError("Error creating invite"));
       }
     });

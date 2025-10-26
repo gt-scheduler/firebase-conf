@@ -1,5 +1,3 @@
-import { sendEmail } from "./connectMailer";
-
 const semesterMapping: Record<string, string> = {
   "02": "Spring",
   "05": "Summer",
@@ -123,4 +121,56 @@ export default async function sendInvitation({
 
   `;
   await sendEmail(friendEmail, subject, text, html);
+}
+
+async function sendEmail(
+  email: string,
+  subject: string,
+  text: string,
+  html: string
+): Promise<void> {
+  const emailRes = await fetch(`${process.env.JUNO_BASE_URL}/email/send`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${process.env.JUNO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      recipients: [
+        {
+          email: email,
+        },
+      ],
+      cc: [],
+      bcc: [],
+      replyToList: [],
+      sender: {
+        email: process.env.JUNO_EMAIL,
+        name: "GT Scheduler",
+      },
+      subject: subject,
+      content: [
+        {
+          type: "text/plain",
+          value: text,
+        },
+        {
+          type: "text/html",
+          value: html,
+        },
+      ],
+    }),
+  });
+
+  if (!emailRes.ok) {
+    throw new Error(
+      `Request failed with status ${
+        emailRes.status
+      }, response: ${await emailRes.text()}`
+    );
+  }
+
+  const data = await emailRes.json();
+  return data;
 }

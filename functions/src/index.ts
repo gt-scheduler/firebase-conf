@@ -6,3 +6,4 @@ export { handleFriendInvitation } from "./handle_friend_invitation";
 export { fetchFriendSchedules } from "./fetch_friend_schedules";
 export { deleteSharedSchedule } from "./delete_shared_schedule";
 export { getPlannedCounts } from "./get_planned_count";
+export { submitMetrics } from "./submit_metrics";

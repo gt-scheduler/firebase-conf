@@ -36,7 +36,7 @@ export const getPlannedCounts = functions
           if (Object.keys(versions).length == 0) {
             continue;
           }
-          const primaryVersion = Object.values(versions)[0]
+          const primaryVersion = Object.values(versions)[0];
 
           const schedule: Version3Schedule = primaryVersion.schedule;
           const pinnedCrns = schedule.pinnedCrns;

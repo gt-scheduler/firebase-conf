@@ -32,10 +32,11 @@ export const getPlannedCounts = functions
           const termData = data.terms?.[term];
           if (!termData) continue;
 
-          const primaryVersion = Object.values(termData.versions ?? {}).find(
-            (v) => v.name.toLowerCase() === "primary"
-          );
-          if (!primaryVersion) continue;
+          const versions = termData.versions ?? {};
+          if (Object.keys(versions).length == 0) {
+            continue;
+          }
+          const primaryVersion = Object.values(versions)[0]
 
           const schedule: Version3Schedule = primaryVersion.schedule;
           const pinnedCrns = schedule.pinnedCrns;

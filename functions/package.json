@@ -18,7 +18,7 @@
     "secrets:get": "bw sync && bw get item gt-scheduler/firebase-conf/.env | fx .notes > \".env\""
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "lib/src/index.js",
   "dependencies": {

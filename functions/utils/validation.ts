@@ -16,6 +16,7 @@ export function validateSection(reference: string): boolean {
 }
 
 export function validateTarget(target: unknown): boolean {
+  
   if (typeof target !== "object" || target === null) return false;
 
   const t = target as { type: TargetType; reference: string };
@@ -33,6 +34,7 @@ export function validateTarget(target: unknown): boolean {
     default:
       return false;
   }
+  
 }
 
 export function validateSemester(value: unknown): boolean {
@@ -58,7 +60,6 @@ export function validateMetricData(data: unknown): boolean {
 
   // Metric name
   if (!Object.values(MetricName).includes(d.metricName)) return false;
-
   // Targets
   if (!Array.isArray(d.targets)) return false;
   for (const target of d.targets) {

@@ -27,7 +27,8 @@ export const submitMetrics = functions
           // This is done to prevent a pre-flight CORS request made to the firebase function
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
           request.body = JSON.parse(request.body.data);
-        } catch {
+        } catch (err) {
+          console.log(err);
           return response.status(401).json(apiError("Bad request"));
         }
 

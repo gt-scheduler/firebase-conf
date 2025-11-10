@@ -145,7 +145,8 @@ export type ScheduleDeletionRequest = {
 // MetricNames are temporary
 export enum MetricName {
   DIFFICULTY = "difficulty",
-  RECOMMENDED = "recommended",
+  OVERALL = "overall",
+  WORKLOAD = "workload",
 }
 
 export enum TargetType {

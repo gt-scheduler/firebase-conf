@@ -27,7 +27,8 @@ export const submitMetrics = functions
           // This is done to prevent a pre-flight CORS request made to the firebase function
           // Refer: https://github.com/gt-scheduler/website/pull/187#issuecomment-1496439246
           request.body = JSON.parse(request.body.data);
-        } catch {
+        } catch (err) {
+          console.log(err);
           return response.status(401).json(apiError("Bad request"));
         }
 
@@ -35,7 +36,7 @@ export const submitMetrics = functions
           IDToken,
           metricName,
           targets,
-          values,
+          value,
           semester,
         }: SubmitMetricsRequestData = request.body;
 
@@ -113,7 +114,7 @@ export const submitMetrics = functions
               const updateData: Partial<MetricData> = {
                 // Keep the same targets since |existing targets| >= |new targets|
                 targets: existingData.targets,
-                values,
+                value,
                 datetime: currTime,
                 semester,
               };
@@ -125,7 +126,7 @@ export const submitMetrics = functions
                 metricName,
                 targets,
                 author: userId,
-                values,
+                value,
                 datetime: currTime,
                 semester,
               };

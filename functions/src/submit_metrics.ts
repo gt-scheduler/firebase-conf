@@ -36,7 +36,7 @@ export const submitMetrics = functions
           IDToken,
           metricName,
           targets,
-          values,
+          value,
           semester,
         }: SubmitMetricsRequestData = request.body;
 
@@ -114,7 +114,7 @@ export const submitMetrics = functions
               const updateData: Partial<MetricData> = {
                 // Keep the same targets since |existing targets| >= |new targets|
                 targets: existingData.targets,
-                values,
+                value,
                 datetime: currTime,
                 semester,
               };
@@ -126,7 +126,7 @@ export const submitMetrics = functions
                 metricName,
                 targets,
                 author: userId,
-                values,
+                value,
                 datetime: currTime,
                 semester,
               };

@@ -165,7 +165,7 @@ export interface MetricData {
   metricName: MetricName;
   targets: MetricTarget[];
   author: string;
-  values: number[];
+  value: number;
   semester?: number;
   datetime: Timestamp;
 }
@@ -174,6 +174,17 @@ export type SubmitMetricsRequestData = {
   IDToken: string;
   metricName: MetricName;
   targets: MetricTarget[];
-  values: number[];
+  value: number;
   semester?: number;
 };
+
+export interface AggregateMetricData {
+  type: "course" | "professor" | "course_professor",
+  courseId: string | null,
+  professorId: string | null,
+  metricName: string,
+  semester: number | null,
+  total: number,     // sum of all values
+  count: number,     // number of values
+  average: number    // computed total / count
+}

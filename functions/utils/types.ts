@@ -1,5 +1,5 @@
 // This file is a compilation of Firebase collections' data schemas.
-
+import { z } from "zod";
 import { Timestamp } from "@google-cloud/firestore";
 
 export interface FriendInviteData {
@@ -138,3 +138,29 @@ export type ScheduleDeletionRequest = {
    */
   owner: boolean;
 };
+
+/**
+ * While we do not use Zod in the other functions and do all validations manually,
+ * this is not a good practice and we should migrate to using Zod for all request validations eventually.
+ * For right now, we will leave the other functions as is and only use Zod for new functions.
+ *
+ * The submit ratings request schema in particular benefits from Zod due to the nested structure and multiple constraints.
+ */
+
+const Rating = z.object({
+  courseId: z.string(),
+  professorId: z.string(),
+  term: z.number(),
+  rating: z.number().min(1).max(5),
+  difficulty: z.number().min(1).max(5),
+  workload: z.number(),
+});
+
+export const SubmitRatingsRequestDataSchema = z.object({
+  IDToken: z.string(),
+  ratings: z.array(Rating).min(1),
+});
+
+export type SubmitRatingsRequestData = z.infer<
+  typeof SubmitRatingsRequestDataSchema
+>;

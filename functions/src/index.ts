@@ -5,3 +5,4 @@ export { createFriendInvitationLink } from "./create_friend_invitation_link";
 export { handleFriendInvitation } from "./handle_friend_invitation";
 export { fetchFriendSchedules } from "./fetch_friend_schedules";
 export { deleteSharedSchedule } from "./delete_shared_schedule";
+export { submitRatings } from "./submit_ratings";

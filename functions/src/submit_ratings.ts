@@ -66,6 +66,7 @@ export const submitRatings = functions
 
             const ratingRef = firestore.collection("ratings").doc();
 
+            // TODO: cast as type here and for stats
             // Insert rating
             tx.set(ratingRef, {
               userId,

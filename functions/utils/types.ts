@@ -164,3 +164,14 @@ export const SubmitRatingsRequestDataSchema = z.object({
 export type SubmitRatingsRequestData = z.infer<
   typeof SubmitRatingsRequestDataSchema
 >;
+
+export const GetRatingsRequestDataSchema = z
+  .object({
+    courses: z.array(z.string()).optional(),
+    professors: z.array(z.string()).optional(),
+  })
+  .refine((v) => (v.courses?.length || 0) + (v.professors?.length || 0) > 0, {
+    message: "At least one course or professor must be specified",
+  });
+
+export type GetRatingsRequestData = z.infer<typeof GetRatingsRequestDataSchema>;

@@ -6,3 +6,4 @@ export { handleFriendInvitation } from "./handle_friend_invitation";
 export { fetchFriendSchedules } from "./fetch_friend_schedules";
 export { deleteSharedSchedule } from "./delete_shared_schedule";
 export { submitRatings } from "./submit_ratings";
+export { getRatingStats } from "./get_rating_stats";

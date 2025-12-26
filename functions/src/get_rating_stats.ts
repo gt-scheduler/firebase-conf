@@ -5,21 +5,33 @@ import { apiError } from "./api";
 import {
   GetRatingsRequestData,
   GetRatingsRequestDataSchema,
+  NormalizedStat,
+  RatingStatDataSchema,
+  RatingStatsResponse,
 } from "../utils/types";
 import { DocumentData } from "@google-cloud/firestore";
 
 const firestore = admin.firestore();
 const corsHandler = cors({ origin: true });
 
-// TODO: validate types before and after
-function normalizeStats(doc: FirebaseFirestore.DocumentData) {
-  if (!doc || doc.reviewCount === 0) return null;
+function normalizeStats(
+  data: FirebaseFirestore.DocumentData | undefined
+): NormalizedStat | null {
+  if (!data) return null;
+
+  const parsed = RatingStatDataSchema.safeParse(data);
+  if (!parsed.success) return null;
+
+  const { sumOverallRating, sumDifficulty, sumWorkload, reviewCount } =
+    parsed.data;
+
+  if (reviewCount === 0) return null;
 
   return {
-    averageRating: doc.sumOverallRating / doc.reviewCount,
-    averageDifficulty: doc.sumDifficulty / doc.reviewCount,
-    averageWorkload: doc.sumWorkload / doc.reviewCount,
-    reviewCount: doc.reviewCount,
+    averageRating: sumOverallRating / reviewCount,
+    averageDifficulty: sumDifficulty / reviewCount,
+    averageWorkload: sumWorkload / reviewCount,
+    reviewCount,
   };
 }
 
@@ -41,7 +53,7 @@ export const getRatingStats = functions
 
         const { courses, professors } = parsed.data as GetRatingsRequestData;
 
-        const result: any = {
+        const result: RatingStatsResponse = {
           courses: {},
           professors: {},
         };

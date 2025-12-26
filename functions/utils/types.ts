@@ -153,7 +153,7 @@ const Rating = z.object({
   term: z.number(),
   rating: z.number().min(1).max(5),
   difficulty: z.number().min(1).max(5),
-  workload: z.number(),
+  workload: z.number().min(0),
 });
 
 export const SubmitRatingsRequestDataSchema = z.object({
@@ -175,3 +175,26 @@ export const GetRatingsRequestDataSchema = z
   });
 
 export type GetRatingsRequestData = z.infer<typeof GetRatingsRequestDataSchema>;
+
+export const RatingStatDataSchema = z.object({
+  sumOverallRating: z.number(),
+  sumDifficulty: z.number(),
+  sumWorkload: z.number(),
+  reviewCount: z.number().int().nonnegative(),
+});
+
+const NormalizedStatSchema = z.object({
+  averageRating: z.number().nonnegative(),
+  averageDifficulty: z.number().nonnegative(),
+  averageWorkload: z.number().nonnegative(),
+  reviewCount: z.number().int().nonnegative(),
+});
+
+export type NormalizedStat = z.infer<typeof NormalizedStatSchema>;
+
+const RatingStatsResponseSchema = z.object({
+  courses: z.record(z.string(), NormalizedStatSchema.nullable()),
+  professors: z.record(z.string(), NormalizedStatSchema.nullable()),
+});
+
+export type RatingStatsResponse = z.infer<typeof RatingStatsResponseSchema>;

@@ -11,7 +11,6 @@ const firestore = admin.firestore();
 const auth = admin.auth();
 const corsHandler = cors({ origin: true });
 
-//TODO: figure out behavior when a user submits multiple ratings for the same course/professor/term combination
 export const submitRatings = functions
   .region("us-east1")
   .https.onRequest(async (request, response) => {
@@ -66,7 +65,6 @@ export const submitRatings = functions
 
             const ratingRef = firestore.collection("ratings").doc();
 
-            // TODO: cast as type here and for stats
             // Insert rating
             tx.set(ratingRef, {
               userId,
@@ -79,31 +77,19 @@ export const submitRatings = functions
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
             });
 
+            const statUpdate = {
+              sumOverallRating: admin.firestore.FieldValue.increment(rating),
+              sumDifficulty: admin.firestore.FieldValue.increment(difficulty),
+              sumWorkload: admin.firestore.FieldValue.increment(workload),
+              reviewCount: admin.firestore.FieldValue.increment(1),
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            };
+
             // Update course stats
-            tx.set(
-              courseStatsRef,
-              {
-                sumOverallRating: admin.firestore.FieldValue.increment(rating),
-                sumDifficulty: admin.firestore.FieldValue.increment(difficulty),
-                sumWorkload: admin.firestore.FieldValue.increment(workload),
-                reviewCount: admin.firestore.FieldValue.increment(1),
-                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-              },
-              { merge: true }
-            );
+            tx.set(courseStatsRef, statUpdate, { merge: true });
 
             // Update professor stats
-            tx.set(
-              professorStatsRef,
-              {
-                sumOverallRating: admin.firestore.FieldValue.increment(rating),
-                sumDifficulty: admin.firestore.FieldValue.increment(difficulty),
-                sumWorkload: admin.firestore.FieldValue.increment(workload),
-                reviewCount: admin.firestore.FieldValue.increment(1),
-                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-              },
-              { merge: true }
-            );
+            tx.set(professorStatsRef, statUpdate, { merge: true });
           }
         });
 

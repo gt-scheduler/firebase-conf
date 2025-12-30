@@ -29,7 +29,8 @@
     "firebase-functions": "^3.14",
     "node-fetch": "^2",
     "nodemailer": "^6.9.1",
-    "yarn": "^1.22.19"
+    "yarn": "^1.22.19",
+    "zod": "3.22.4"
   },
   "devDependencies": {
     "@types/date-and-time": "^0.13.0",

@@ -1,5 +1,5 @@
 // This file is a compilation of Firebase collections' data schemas.
-
+import { z } from "zod";
 import { Timestamp } from "@google-cloud/firestore";
 
 export interface FriendInviteData {
@@ -138,3 +138,63 @@ export type ScheduleDeletionRequest = {
    */
   owner: boolean;
 };
+
+/**
+ * While we do not use Zod in the other functions and do all validations manually,
+ * this is not a good practice and we should migrate to using Zod for all request validations eventually.
+ * For right now, we will leave the other functions as is and only use Zod for new functions.
+ *
+ * The submit ratings request schema in particular benefits from Zod due to the nested structure and multiple constraints.
+ */
+
+const Rating = z.object({
+  courseId: z.string(),
+  professorId: z.string(),
+  term: z.number(),
+  rating: z.number().min(1).max(5),
+  difficulty: z.number().min(1).max(5),
+  workload: z.number().min(0),
+});
+
+export const SubmitRatingsRequestDataSchema = z.object({
+  IDToken: z.string(),
+  ratings: z.array(Rating).min(1),
+});
+
+export type SubmitRatingsRequestData = z.infer<
+  typeof SubmitRatingsRequestDataSchema
+>;
+
+export const GetRatingsRequestDataSchema = z
+  .object({
+    courses: z.array(z.string()).optional(),
+    professors: z.array(z.string()).optional(),
+  })
+  .refine((v) => (v.courses?.length || 0) + (v.professors?.length || 0) > 0, {
+    message: "At least one course or professor must be specified",
+  });
+
+export type GetRatingsRequestData = z.infer<typeof GetRatingsRequestDataSchema>;
+
+export const RatingStatDataSchema = z.object({
+  sumOverallRating: z.number(),
+  sumDifficulty: z.number(),
+  sumWorkload: z.number(),
+  reviewCount: z.number().int().nonnegative(),
+});
+
+const NormalizedStatSchema = z.object({
+  averageRating: z.number().nonnegative(),
+  averageDifficulty: z.number().nonnegative(),
+  averageWorkload: z.number().nonnegative(),
+  reviewCount: z.number().int().nonnegative(),
+});
+
+export type NormalizedStat = z.infer<typeof NormalizedStatSchema>;
+
+const RatingStatsResponseSchema = z.object({
+  courses: z.record(z.string(), NormalizedStatSchema.nullable()),
+  professors: z.record(z.string(), NormalizedStatSchema.nullable()),
+});
+
+export type RatingStatsResponse = z.infer<typeof RatingStatsResponseSchema>;
